@@ -28,7 +28,3 @@ class Person:
             password.append(allowed_characters[random.randint(0, len(allowed_characters) - 1)])
         return "".join(password)
 
-    @staticmethod
-    @abc.abstractmethod
-    def construct(username):
-        raise NotImplementedError("The method was not implemented")

@@ -1,4 +1,4 @@
-from db.person_db import Person_db
+from db.personDB import PersonDB
 from domain.fan_id_card import FanIDCard
 from domain.person import Person
 
@@ -21,7 +21,7 @@ class Customer(Person):
         self.fan_id_card.reserve_ticket(ticket)
 
     def return_ticket(self, ticket):
-        if ticket.fan_id_card is None or self.fan_id_card.id != ticket.fan_id_card.id:
+        if ticket[1] is None or self.fan_id_card.id != ticket[1]:
             raise TicketDoesNotBelongToCustomerError()
         self.fan_id_card.return_ticket(ticket)
 
@@ -39,8 +39,8 @@ class Customer(Person):
 
     @staticmethod
     def construct(username):
-        if not Person_db.does_exist(username) or Person_db.get_role_by_username(username) != "customer":
+        if not PersonDB.does_exist(username) or PersonDB.get_role_by_username(username) != "customer":
             raise CustomerDoesNotExistError()
-        row = Person_db.get_by_id(username)
+        row = PersonDB.get_by_id(username)
         card = FanIDCard.construct_by_username(username)
         return Customer(row[0], row[1], row[2], row[3], row[4], row[5], row[6], card)

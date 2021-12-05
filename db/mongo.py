@@ -2,12 +2,12 @@ from pymongo import MongoClient
 class Mongo:
     CONNECTION_STRING = "mongodb+srv://qdea:Narud20@footballbase.oeakp.mongodb.net/myFirstDatabase"
     client = MongoClient(CONNECTION_STRING)['TicketTerminal']
+    dbname = client
     if len(client.collection_names()) == 0:
         client.create_collection('person')
         client.create_collection('matches')
         client.create_collection('ticket')
         client.create_collection('fun_id_card')
-        dbname = client
         collection_name = dbname.get_collection('person')
         person_list = [ 
         {"username" : "mario","first_name" : "Mario","last_name" : "Martinez","age" : 25,"role" : "customer", "password" : "202cb962ac59075b964b07152d234b70", "creator" : "NULL"},
@@ -24,13 +24,19 @@ class Mongo:
         collection_name = dbname.get_collection('ticket')
         collection_name.delete_many({})
         tickets_list = [
-        {"ticket_id" : "1","card_id" : 1,"price" : "50.99","match_id" : "2","block" : "1","row" : "1","place" : "1"},
+        {"ticket_id" : "1","card_id" : "NULL","price" : "50.99","match_id" : "2","block" : "1","row" : "1","place" : "1"},
         {"ticket_id" : "2","card_id" : 1,"price" : "40.99","match_id" : "2","block" : "1","row" : "1","place" : "2"}
         ]
-        collection_name.insert_many(tickets_list)
         fun_id_cards = [
         {"card_id" : 1,"username" : 'mario',"expiration_date" : '2022-10-10',"balance" : 1000.0,"is_blocked" : False}
         ]
         collection_name = dbname.get_collection('fun_id_card')
         collection_name.delete_many({})
         collection_name.insert_many(fun_id_cards)
+    collection_name = dbname.get_collection('ticket')
+    collection_name.delete_many({})
+    tickets_list = [
+    {"ticket_id" : 1,"card_id" : 1,"price" : 50.99,"match_id" : 2,"block" : "1","row" : "1","place" : "1"},
+    {"ticket_id" : 2,"card_id" : "NULL","price" : 40.99,"match_id" : 2,"block" : "1","row" : "1","place" : "2"}
+    ]
+    collection_name.insert_many(tickets_list)

@@ -1,4 +1,4 @@
-from db.ticket_db import Ticket_db
+from db.ticketDB import TicketDB
 from domain.fan_id_card import FanIDCard
 from domain.match import Match
 from domain.seat import Seat
@@ -26,9 +26,9 @@ class SingleTicket(Ticket):
 
     @staticmethod
     def construct(ticket_id):
-        if not Ticket_db.does_exist(ticket_id):
+        if not TicketDB.does_exist(ticket_id):
             raise TicketDoesNotExistError()
-        row = Ticket_db.get_by_id(ticket_id)
+        row = TicketDB.get_by_id(ticket_id)
         if row[1] is None:
             fan_id_card = None
         else:

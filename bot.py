@@ -1,8 +1,8 @@
 import telebot
 import datetime
-from db.matches_db import Match_db
-from db.person_db import Person_db
-from db.ticket_db import Ticket_db
+from db.matchesDB import MatchDB
+from db.personDB import PersonDB
+from db.ticketDB import TicketDB
 from domain.terminal import Terminal, UserAlreadyExistsError, IncorrectInputFormat
 from domain.customer import Customer, TicketDoesNotBelongToCustomerError, CustomerDoesNotExistError
 from domain.fan_id_card import NotEnoughMoneyError
@@ -65,7 +65,7 @@ def show_matches(message):
 
 
 def get_matches():
-    result = Match_db.get_matches()
+    result = MatchDB.get_matches()
     matches = ""
     for row in result:
         matches += str(Match(*row)) + "\n\n"
@@ -91,7 +91,7 @@ def login(message):
 
 def enter_username(message):
     username = message.text
-    if Person_db.does_exist(username):
+    if PersonDB.does_exist(username):
         user.username = username
         send(message, "Enter your password", enter_password)
     else:
@@ -99,10 +99,10 @@ def enter_username(message):
 
 def enter_password(message):
     password = message.text
-    if Person_db.is_password_correct(user.username, password):
+    if PersonDB.is_password_correct(user.username, password):
         user.password = password
         user.authenticated = True
-        user.role = Person_db.get_role_by_username(user.username)
+        user.role = PersonDB.get_role_by_username(user.username)
         print(user.username, user.password, user.role)
         if user.role == "customer":
             try:
@@ -128,13 +128,16 @@ def enter_password(message):
 @bot.message_handler(regexp="Show tickets")
 def show_tickets(message):
     if user.role == "customer":
-        tickets = get_tickets()
-        send(message, tickets if tickets != "" else "You do not have any tickets")
+        try:
+            tickets = get_tickets()
+            send(message,tickets) 
+        except:
+            send(message,"You do not have any tickets")
 
 
 def get_tickets():
     card_id = user.person.fan_id_card
-    result = Ticket_db.get_tickets_id_by_card_id(card_id.id)
+    result = TicketDB.get_tickets_id_by_card_id(card_id.id)
     tickets = ""
     for row in result:
         ticket_id = row[0]
@@ -161,5 +164,90 @@ def enter_value(message):
         send(message, "Your balance was increased and now equals ${}".format(round(user.person.fan_id_card.balance, 2)))
     except ValueError:
         send(message, "Wrong input format. You should enter the value in $. Please enter the value again", enter_value)
+
+@bot.message_handler(regexp="Buy ticket")
+def buy_ticket(message):
+    if user.role == "customer":
+        if user.person.is_blocked():
+            send(message, "Your Fan ID Card is blocked")
+        else:
+            matches = get_matches()
+            if matches == "":
+                send(message, "There are no available matches")
+            else:
+                tickets_exist = MatchDB.get_tickets_cnt()
+                if tickets_exist > 0:
+                    send(message, "Enter match ID you would like to attend")
+                    send(message, matches, enter_match_id_to_buy_ticket)
+                else:
+                    send(message, "There are no tickets at all. Come back later")
+                    return
+
+
+
+def enter_match_id_to_buy_ticket(message):
+    global match_id
+    try:
+        match_id = int(message.text)
+        if not MatchDB.does_exist(match_id):
+            send(message, "The entered match id does not exist. Please enter the match id again", enter_match_id_to_buy_ticket)
+            return
+        try:
+            available_seats = get_available_seats(match_id)
+            send(message, "Choose an available seat for this match. Your balance: ${}".format(round(user.person.fan_id_card.balance, 2)))
+            send(message, available_seats, choose_seat)
+        except:
+            send(message, "There are no available seats for this match. Please choose another match", enter_match_id_to_buy_ticket)
+            return
+    except ValueError:
+        send(message, "Match ID must be an integer. Please enter the match id again", enter_match_id_to_buy_ticket)
+def choose_seat(message):
+    try:
+        ticket_id = int(message.text)
+        if not TicketDB.does_exist(ticket_id):
+            send(message, "The entered ID does not exist. Please enter the ID again", choose_seat)
+            return
+        ticket = TicketDB.get_by_id(ticket_id)
+        user.person.buy_ticket(ticket)
+        send(message, "The seat and ticket were successfully reserved. Balance: ${}".format(round(user.person.fan_id_card.balance, 2)))
+    except ValueError:
+        send(message, "You should enter an ID for choosing a seat. Please enter the ID again", choose_seat)
+    except NotEnoughMoneyError as error:
+        send(message, str(error) + ". Please enter another seat", choose_seat)
+
+
+def get_available_seats(match_id):
+    result = TicketDB.get_available_tickets_id_and_seats_and_price(match_id)
+    tickets_id_and_seats_and_prices = ""
+    for row in result:
+        tickets_id_and_seats_and_prices += str(row[0]) + ": " + str(Seat(row[1], row[2], row[3])) + ". Price: ${}\n".format(row[4])
+    return tickets_id_and_seats_and_prices
+    
+@bot.message_handler(regexp="Return ticket")
+def return_ticket(message):
+    if user.role == "customer":
+        if user.person.is_blocked():
+            send(message, "Your Fan ID Card is blocked")
+        else:
+            tickets = get_tickets()
+            if tickets == "":
+                send(message, "You do not have any tickets")
+            else:
+                send(message, "Enter ticket ID you would like to return")
+                send(message, tickets, enter_ticket_id_to_return)
+
+
+def enter_ticket_id_to_return(message):
+    try:
+        ticket_id = int(message.text)
+        ticket = TicketDB.get_by_id(ticket_id)
+        user.person.return_ticket(ticket)
+        send(message, "Ticket {} was successfully returned. Balance: ${}".format(ticket_id, round(user.person.fan_id_card.balance, 2)))
+    except ValueError:
+        send(message, "Ticket ID must be an integer. Please enter the ticket ID again", enter_ticket_id_to_return)
+    except TicketDoesNotExistError:
+        send(message, "The entered ticket ID does not exist. Please enter the ticket ID again", enter_ticket_id_to_return)
+    except TicketDoesNotBelongToCustomerError:
+        send(message, "Entered ticket ID does not belong to you. Please enter another ticket ID", enter_ticket_id_to_return)
 
 bot.polling()

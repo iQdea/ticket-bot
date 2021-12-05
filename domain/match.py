@@ -1,4 +1,4 @@
-from db.matches_db import Match_db
+from db.matchesDB import MatchDB
 
 
 class MatchDoesNotExistError(Exception):
@@ -19,10 +19,10 @@ class Match:
 
     @staticmethod
     def construct(match_id):
-        if not Match_db.does_exist(match_id):
+        if not MatchDB.does_exist(match_id):
             raise MatchDoesNotExistError()
-        row = Match_db.get_by_id(match_id)
+        row = MatchDB.get_by_id(match_id)
         return Match(row[0], row[1], row[2], row[3], row[4], row[5])
 
     def save(self):
-        Match_db.update_match(self)
+        MatchDB.update_match(self)

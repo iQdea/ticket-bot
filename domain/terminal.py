@@ -1,4 +1,4 @@
-from db.person_db import Person_db
+from db.personDB import PersonDB
 from domain.fan_id_card import FanIDCard
 from domain.person import Person
 
@@ -29,9 +29,9 @@ class Terminal(Person):
         if self.is_format_incorrect(customer):
             raise IncorrectInputFormat("The input does not correspond to system format. "
                                        "The age must be in range from 12 to 99 and other fields must not exceed the length of {} symbols".format(self.MAX_LENGTH))
-        if Person_db.does_exist(customer.username):
+        if PersonDB.does_exist(customer.username):
             raise UserAlreadyExistsError("User already exists in the system")
-        Person_db.register(customer, self.username)
+        PersonDB.register(customer, self.username)
         customer.fan_id_card = self.create_fan_id(customer.username)
 
     def create_fan_id(self, username):
@@ -47,5 +47,5 @@ class Terminal(Person):
 
     @staticmethod
     def construct(username):
-        row = Person_db.get_by_id(username)
+        row = PersonDB.get_by_id(username)
         return Terminal(row[0], row[2], row[3], row[5])

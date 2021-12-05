@@ -1,11 +1,11 @@
 import pymongo
 from db.mongo import Mongo
-from db.ticket_db import Ticket_db as lm
+from db.ticketDB import TicketDB as lm
 
 class MatchNotFoundError(Exception):
     pass
 
-class Match_db(Mongo):
+class MatchDB(Mongo):
 
     @staticmethod
     def add_match(match):
@@ -16,7 +16,7 @@ class Match_db(Mongo):
                                     "match_date" : match.date, 
                                     "organizer" : match.organizer,
                                     "match_type" : match.match_type})
-        return Match_db.get_max_match_id()
+        return MatchDB.get_max_match_id()
     @staticmethod
     def update_match(match):
         Mongo.client.get_collection('matches').update_one({"match_id" : match.id}, 
@@ -60,3 +60,15 @@ class Match_db(Mongo):
     @staticmethod
     def get_max_match_id():
         return Mongo.client.get_collection('matches').find({}, {"_id" : 0}).sort('match_id', pymongo.DESCENDING)[0]['match_id']
+
+    @staticmethod
+    def get_tickets_cnt():
+        A = []
+        cnt = 0
+        for i in MatchDB.get_matches():
+            A.append(i[0])
+        for j in A:
+            ticket = Mongo.client.get_collection('ticket')
+            find_ticket = ticket.find({"match_id" : j, "card_id" : "NULL"}, {"ticket_id" : 1, "price" : 1, "block": 1, 'row': 1, 'place': 1, "_id" : 0}).sort('ticket_id', pymongo.ASCENDING)
+            cnt += len(list(find_ticket))
+        return cnt

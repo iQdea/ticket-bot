@@ -2,7 +2,7 @@ from db.mongo import Mongo
 import pymongo
 class TicketNotFoundError(Exception):
     pass
-class Ticket_db(Mongo):
+class TicketDB(Mongo):
 
     @staticmethod
     def add_ticket(ticket, card_id):
@@ -40,23 +40,27 @@ class Ticket_db(Mongo):
         delim = len(find_tickets[0].values())
         Ans_list = [list(find_tickets[i].items()) for i in range(cnt)]
         result = [Ans_list[i][j][1] for i in range(len(Ans_list)) for j in range(len(Ans_list[i]))]
-        res = Ticket_db.list_split(result, delim)
+        res = TicketDB.list_split(result, delim)
         return list(res)
 
     @staticmethod
     def get_available_tickets_id_and_seats_and_price(match_id):
         ticket = Mongo.client.get_collection('ticket')
-        find_ticket = ticket.find({"match_id" : match_id, "card_id" : "NULL"}, {"ticket_id" : 1, "price" : 1, "block": 1, 'row': 1, 'place': 1, "_id" : 0})
-        res = find_ticket.sort('ticket_id', pymongo.ASCENDING)
+        find_ticket = ticket.find({"match_id" : match_id, "card_id" : "NULL"}, {"ticket_id" : 1, "price" : 1, "block": 1, 'row': 1, 'place': 1, "_id" : 0}).sort('ticket_id', pymongo.ASCENDING)
+        cnt = ticket.count_documents({"match_id" : match_id, "card_id" : "NULL"})
+        delim = len(find_ticket[0].values())
+        Ans_list = [list(find_ticket[i].items()) for i in range(cnt)]
+        result = [Ans_list[i][j][1] for i in range(len(Ans_list)) for j in range(len(Ans_list[i]))]
+        res = TicketDB.list_split(result, delim)
         return list(res)
 
     @staticmethod
     def reserve_ticket(ticket_id, card_id):
-        Mongo.client.get_collection('ticket').update_one({"ticket_id" : ticket_id}, {'$set':{"card_id" : card_id}})
+        return Mongo.client.get_collection('ticket').update_one({"ticket_id" : ticket_id, "card_id" : "NULL"}, {'$set':{"card_id" : card_id}})
 
     @staticmethod
     def return_ticket(ticket_id):
-        Mongo.client.get_collection('ticket').update_one({"ticket_id" : ticket_id}, {'$set':{"card_id" : "NULL"}})
+        return Mongo.client.get_collection('ticket').update_one({"ticket_id" : ticket_id, "card_id" : {"$ne": "NULL"}}, {'$set':{"card_id" : "NULL"}})
 
     @staticmethod
     def delete_tickets_by_match_id(match_id):
@@ -74,5 +78,5 @@ class Ticket_db(Mongo):
         cnt = ticket.count_documents({"match_id" : match_id})
         Ans_list = [list(find_ticket[i].items()) for i in range(cnt)]
         result = [Ans_list[i][j][1] for i in range(len(Ans_list)) for j in range(len(Ans_list[i]))]
-        res = Ticket_db.list_split(result, 2)
+        res = TicketDB.list_split(result, 2)
         return list(res)

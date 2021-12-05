@@ -8,7 +8,7 @@ class UsernameNotFoundError(Exception):
     pass
 
 
-class Person_db(Mongo):
+class PersonDB(Mongo):
     @staticmethod
     def register(person, creator="NULL"):
         collection_name = Mongo.client.get_collection('person')
@@ -17,7 +17,7 @@ class Person_db(Mongo):
                                     "last_name" : person.lastname, 
                                     "age" : person.age,
                                     "role" : person.role,
-                                    "password" :  Person_db.encrypt_password(person.password),
+                                    "password" :  PersonDB.encrypt_password(person.password),
                                     "creator" : creator})
     @staticmethod
     def encrypt_password(password):
@@ -25,7 +25,7 @@ class Person_db(Mongo):
 
     @staticmethod
     def is_password_correct(username, password):
-        encrypted_password = Person_db.encrypt_password(password)
+        encrypted_password = PersonDB.encrypt_password(password)
         result = Mongo.client.get_collection('person').count_documents({"username" : username, "password" : encrypted_password})
         return result != 0
 
