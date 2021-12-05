@@ -4,13 +4,13 @@ import abc
 
 class Person:
 
-    def __init__(self, username, first_name, last_name, age, role):
+    def __init__(self, username, first_name, last_name, age, password, role):
         self.username = username
         self.first_name = first_name
         self.last_name = last_name
         self.age = age
         self.role = role
-        self.password = Person.generate_password()
+        self.password = password
 
     def __str__(self):
         return "Username: {}\nFirst name: {}\nLast name: {}\nAge: {}\nRole: {}".format(

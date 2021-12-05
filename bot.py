@@ -1,5 +1,5 @@
 import telebot
-import datetime
+import hashlib
 from db.matchesDB import MatchDB
 from db.personDB import PersonDB
 from db.ticketDB import TicketDB
@@ -47,7 +47,7 @@ def show(message):
             user_markup.row("Show tickets")
             user_markup.row("Add balance")
             user_markup.row("Buy ticket", "Return ticket")
-        elif user.role == "cashier":
+        elif user.role == "terminal":
             user_markup.row("Register new customer")
             user_markup.row("Block Fan ID Card", "Unblock Fan ID Card")
         elif user.role == "organizer":
@@ -92,6 +92,7 @@ def login(message):
 def enter_username(message):
     username = message.text
     if PersonDB.does_exist(username):
+        print("Ok")
         user.username = username
         send(message, "Enter your password", enter_password)
     else:
@@ -110,7 +111,7 @@ def enter_password(message):
                 send(message, "You have been successfully logged in")
             except:
                 send(message, "User wasn't found. Check if you have your fun_id_card")
-        elif user.role == "cashier":
+        elif user.role == "terminal":
             try:
                 user.person = Terminal.construct(user.username)
                 send(message, "You have been successfully logged in")
@@ -249,5 +250,83 @@ def enter_ticket_id_to_return(message):
         send(message, "The entered ticket ID does not exist. Please enter the ticket ID again", enter_ticket_id_to_return)
     except TicketDoesNotBelongToCustomerError:
         send(message, "Entered ticket ID does not belong to you. Please enter another ticket ID", enter_ticket_id_to_return)
+
+@bot.message_handler(regexp="Register new customer")
+def register_new_customer(message):
+    if user.role == "terminal":
+        global new_customer
+        new_customer = NewCustomer()
+        send(message, "Enter username", enter_new_username)
+
+
+def enter_new_username(message):
+    new_customer.username = message.text
+    send(message, "Enter age", enter_age)
+
+
+def enter_age(message):
+    try:
+        new_customer.age = int(message.text)
+        if new_customer.age < 12:
+            send(message, "The minimum age must be at least 12")
+        else:
+            send(message, "Enter first name", enter_first_name)
+    except ValueError:
+        send(message, "Age must be an integer. Please enter the age again in the correct format", enter_age)
+
+
+def enter_first_name(message):
+    new_customer.first_name = message.text
+    send(message, "Enter last name", enter_last_name)
+
+
+def enter_last_name(message):
+    new_customer.last_name = message.text
+    send(message, "Enter password name", enter_password_of_customer)
+
+def enter_password_of_customer(message):
+    new_customer.password = message.text
+    customer = Customer(new_customer.username, new_customer.first_name, new_customer.last_name, new_customer.age, "customer", new_customer.password, "NULL", None)
+    try:
+        user.person.register(customer)
+        print(customer.password)        
+        send(message, "The customer was successfully registered".format(customer.username))
+        send(message, "Username: {}\nPassword: {}".format(customer.username, customer.password))
+    except IncorrectInputFormat as error:
+        send(message, error)
+    except UserAlreadyExistsError as error:
+        send(message, error)
+
+
+@bot.message_handler(regexp="Unblock Fan ID Card")
+def unblock_fan_id_card(message):
+    if user.role == "terminal":
+        send(message, "Enter Fan ID Card holder's username you would like to unblock", enter_username_to_unblock)
+
+
+def enter_username_to_unblock(message):
+    username = message.text
+    try:
+        customer = Customer.construct(username)
+        user.person.unblock_fan_id_card(customer)
+        send(message, "The Fan ID Card {} was successfully unblocked".format(customer.fan_id_card.id))
+    except CustomerDoesNotExistError:
+        send(message, "Customer with username \"{}\" does not exist. Please enter the username again".format(username), enter_username_to_unblock)
+
+
+@bot.message_handler(regexp="Block Fan ID Card")
+def block_fan_id_card(message):
+    if user.role == "terminal":
+        send(message, "Enter Fan ID Card holder's username you would like to block", enter_username_to_block)
+
+
+def enter_username_to_block(message):
+    username = message.text
+    try:
+        customer = Customer.construct(username)
+        user.person.block_fan_id_card(customer)
+        send(message, "The Fan ID Card {} was successfully blocked".format(customer.fan_id_card.id))
+    except CustomerDoesNotExistError:
+        send(message, "Customer with username \"{}\" does not exist. Please enter the username again".format(username), enter_username_to_block)
 
 bot.polling()

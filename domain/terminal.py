@@ -19,8 +19,8 @@ class Terminal(Person):
 
     MAX_LENGTH = 20
 
-    def __init__(self, username, first_name, last_name, age):
-        super().__init__(username, first_name, last_name, age, role="cashier")
+    def __init__(self, username, first_name, last_name, age, password):
+        super().__init__(username, first_name, last_name, age, password, role="terminal")
 
     def is_format_incorrect(self, customer):
         return len(customer.username) > self.MAX_LENGTH or len(customer.first_name) > self.MAX_LENGTH or len(customer.last_name) > self.MAX_LENGTH or customer.age > 99
@@ -48,4 +48,4 @@ class Terminal(Person):
     @staticmethod
     def construct(username):
         row = PersonDB.get_by_id(username)
-        return Terminal(row[0], row[2], row[3], row[5])
+        return Terminal(row[0], row[1], row[2], row[3], row[5])

@@ -14,7 +14,7 @@ class PersonDB(Mongo):
         collection_name = Mongo.client.get_collection('person')
         collection_name.insert_one({"username" : person.username,
                                     "first_name" : person.first_name,
-                                    "last_name" : person.lastname, 
+                                    "last_name" : person.last_name, 
                                     "age" : person.age,
                                     "role" : person.role,
                                     "password" :  PersonDB.encrypt_password(person.password),
