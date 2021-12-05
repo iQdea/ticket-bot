@@ -1,14 +1,16 @@
 import telebot
 import hashlib
+from db.mongo import Mongo
 from db.matchesDB import MatchDB
 from db.personDB import PersonDB
 from db.ticketDB import TicketDB
 from domain.terminal import Terminal, UserAlreadyExistsError, IncorrectInputFormat
 from domain.customer import Customer, TicketDoesNotBelongToCustomerError, CustomerDoesNotExistError
-from domain.fan_id_card import NotEnoughMoneyError
+from domain.fan_id_card import FanIDCard, NotEnoughMoneyError
 from domain.match import Match, MatchDoesNotExistError
 from domain.organizer import Organizer
 from domain.seat import Seat
+from domain.person import Person
 from domain.ticket import SingleTicket, Ticket, TicketDoesNotExistError
 
 token = "2130797376:AAENz9nRcdRj0GiHnnzFOOQvY8XSpvTEzfs"
@@ -37,25 +39,28 @@ def send(message, text, next_handler=None):
     if next_handler is not None:
         bot.register_next_step_handler(sent, next_handler)
 
+
 @bot.message_handler(commands=["start"], regexp="start")
 def show(message):
     user_markup = telebot.types.ReplyKeyboardMarkup(True, False)
     if not user.authenticated:
+        user_markup.row("Register new customer")
         user_markup.row("Login")
+        user_markup.row("Show matches")
     else:
         if user.role == "customer":
             user_markup.row("Show tickets")
             user_markup.row("Add balance")
             user_markup.row("Buy ticket", "Return ticket")
         elif user.role == "terminal":
-            user_markup.row("Register new customer")
             user_markup.row("Block Fan ID Card", "Unblock Fan ID Card")
         elif user.role == "organizer":
             user_markup.row("Add match", "Update match")
             user_markup.row("Delete match", "Cancel match")
         user_markup.row("My credentials")
         user_markup.row("Logout")
-    user_markup.row("Show matches")
+        user_markup.row("Confirm logout")
+    user_markup.row("Continue")
     bot.send_message(message.chat.id, "Choose command", reply_markup=user_markup)
 
 @bot.message_handler(regexp="Show matches")
@@ -92,7 +97,6 @@ def login(message):
 def enter_username(message):
     username = message.text
     if PersonDB.does_exist(username):
-        print("Ok")
         user.username = username
         send(message, "Enter your password", enter_password)
     else:
@@ -109,6 +113,7 @@ def enter_password(message):
             try:
                 user.person = Customer.construct(user.username)
                 send(message, "You have been successfully logged in")
+                bot.register_next_step_handler(message, show)
             except:
                 send(message, "User wasn't found. Check if you have your fun_id_card")
         elif user.role == "terminal":
@@ -253,7 +258,7 @@ def enter_ticket_id_to_return(message):
 
 @bot.message_handler(regexp="Register new customer")
 def register_new_customer(message):
-    if user.role == "terminal":
+    if user.role == "terminal" or not user.authenticated:
         global new_customer
         new_customer = NewCustomer()
         send(message, "Enter username", enter_new_username)
@@ -282,14 +287,17 @@ def enter_first_name(message):
 
 def enter_last_name(message):
     new_customer.last_name = message.text
-    send(message, "Enter password name", enter_password_of_customer)
+    send(message, "Enter password", enter_password_of_customer)
 
 def enter_password_of_customer(message):
     new_customer.password = message.text
     customer = Customer(new_customer.username, new_customer.first_name, new_customer.last_name, new_customer.age, "customer", new_customer.password, "NULL", None)
     try:
-        user.person.register(customer)
-        print(customer.password)        
+        if not user.person == None:
+            user.person.register(customer)
+        else:
+            PersonDB.register(customer, creator="terminal")
+            FanIDCard.create(customer.username)
         send(message, "The customer was successfully registered".format(customer.username))
         send(message, "Username: {}\nPassword: {}".format(customer.username, customer.password))
     except IncorrectInputFormat as error:
