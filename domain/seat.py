@@ -1,8 +1,8 @@
 class Seat:
 
-    BLOCKS = 5
-    ROWS = 2
-    PLACES = 3
+    BLOCKS = 2
+    ROWS = 3
+    PLACES = 5
 
     def __init__(self, block, row, place):
         self.block = block

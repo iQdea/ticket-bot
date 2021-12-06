@@ -5,21 +5,25 @@ from db.ticketDB import TicketDB
 from domain.person import Person
 from domain.seat import Seat
 from domain.ticket import SingleTicket
+import random
 
 
 class Organizer(Person):
 
-    def __init__(self, username, first_name, last_name, age):
-        super().__init__(username, first_name, last_name, age, "organizer")
+    def __init__(self, username, first_name, last_name, age, password):
+        super().__init__(username, first_name, last_name, age, password, "organizer")
 
     @staticmethod
     def add_match(match):
         new_match_id = MatchDB.add_match(match)
         match.id = new_match_id
         seats = Seat.get_seats()
+        id = random.sample(range(10000000, 99999999), len(seats))
+        cnt = 0
         for seat in seats:
             price = 20 * seat.block + 5 * seat.row + 3 * seat.place + 0.99
-            ticket = SingleTicket(None, None, price, match, seat)
+            ticket = SingleTicket(id[cnt], None, price, match, seat)
+            cnt += 1
             TicketDB.add_ticket(ticket)
 
     @staticmethod
@@ -43,4 +47,4 @@ class Organizer(Person):
     @staticmethod
     def construct(username):
         row = PersonDB.get_by_id(username)
-        return Organizer(row[0], row[2], row[3], row[5])
+        return Organizer(row[0], row[1], row[2], row[3], row[5])

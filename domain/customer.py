@@ -21,7 +21,7 @@ class Customer(Person):
         self.fan_id_card.reserve_ticket(ticket)
 
     def return_ticket(self, ticket):
-        if ticket[1] is None or self.fan_id_card.id != ticket[1]:
+        if ticket[1] is None or self.fan_id_card.card_id != ticket[1]:
             raise TicketDoesNotBelongToCustomerError()
         self.fan_id_card.return_ticket(ticket)
 

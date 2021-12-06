@@ -5,7 +5,7 @@ class TicketNotFoundError(Exception):
 class TicketDB(Mongo):
 
     @staticmethod
-    def add_ticket(ticket, card_id):
+    def add_ticket(ticket, card_id="NULL"):
         seat = ticket.seat
         collection_name = Mongo.client.get_collection('ticket')
         collection_name.insert_one({"ticket_id" : ticket.id,
@@ -17,8 +17,8 @@ class TicketDB(Mongo):
                                     "place" : seat.place})
 
     @staticmethod
-    def get_by_id(ticket_id):
-        result = Mongo.client.get_collection('ticket').find({"ticket_id" : ticket_id}, {"_id" : 0})
+    def get_by_id(ticket_id, match_id):
+        result = Mongo.client.get_collection('ticket').find({"ticket_id" : ticket_id, "match_id": match_id}, {"_id" : 0})
         checkout = Mongo.client.get_collection('ticket').count_documents({"ticket_id" : ticket_id})
         if checkout == 0:
             raise TicketNotFoundError("Ticket was not found")
@@ -35,7 +35,7 @@ class TicketDB(Mongo):
     @staticmethod
     def get_tickets_id_by_card_id(card_id):
         tickets = Mongo.client.get_collection('ticket')
-        find_tickets = tickets.find({"card_id" : card_id}, {"_id" : 0, "ticket_id" : 1}).sort('ticket_id', pymongo.ASCENDING)
+        find_tickets = tickets.find({"card_id" : card_id}, {"_id" : 0, "ticket_id" : 1, "match_id" : 1}).sort('ticket_id', pymongo.ASCENDING)
         cnt = tickets.count_documents({"card_id" : card_id})
         delim = len(find_tickets[0].values())
         Ans_list = [list(find_tickets[i].items()) for i in range(cnt)]

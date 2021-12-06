@@ -7,7 +7,10 @@ class MatchDoesNotExistError(Exception):
 
 class Match:
     def __init__(self, id, host_team, guest_team, date, organizer, match_type):
-        self.id = id
+        if id == None:
+            self.id = Match.new_id()
+        else:
+            self.id = id
         self.host_team = host_team
         self.guest_team = guest_team
         self.date = date
@@ -26,3 +29,12 @@ class Match:
 
     def save(self):
         MatchDB.update_match(self)
+    
+    @staticmethod
+    def new_id():
+        res = MatchDB.get_matches()
+        if not res == 0:
+            res = [res[i][0] for i in range(len(res))]
+            return max(res) + 1
+        else:
+            return 1

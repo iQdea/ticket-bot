@@ -47,7 +47,7 @@ class FanIDCardDB(Mongo):
     @staticmethod
     def insert(card):
         collection_name = Mongo.client.get_collection('fun_id_card')
-        collection_name.insert_one({"card_id" : card.id,
+        collection_name.insert_one({"card_id" : card.card_id,
                                     "username" : card.username,
                                     "expiration_date" : card.expiration_date,
                                     "balance" : card.balance, 
@@ -55,7 +55,7 @@ class FanIDCardDB(Mongo):
 
     @staticmethod
     def update(card):
-        Mongo.client.get_collection('fun_id_card').update_one({"card_id" : card.id}, 
+        Mongo.client.get_collection('fun_id_card').update_one({"card_id" : card.card_id}, 
         {'$set':{"username" : card.username,
                 "expiration_date" : card.expiration_date,
                 "balance" : card.balance, 
@@ -63,7 +63,7 @@ class FanIDCardDB(Mongo):
 
     @staticmethod
     def save(card):
-        if FanIDCardDB.does_exist(card.id):
+        if FanIDCardDB.does_exist(card.card_id):
             FanIDCardDB.update(card)
         else:
             FanIDCardDB.insert(card)

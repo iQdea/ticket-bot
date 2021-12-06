@@ -46,6 +46,8 @@ class MatchDB(Mongo):
         matches = Mongo.client.get_collection('matches')
         find_matches = matches.find({}, {"_id" : 0}).sort('match_id', pymongo.DESCENDING)
         cnt = matches.count_documents({})
+        if cnt == 0:
+            return 0
         delim = len(find_matches[0].values())
         Ans_list = [list(find_matches[i].items()) for i in range(cnt)]
         result = [Ans_list[i][j][1] for i in range(len(Ans_list)) for j in range(len(Ans_list[i]))]

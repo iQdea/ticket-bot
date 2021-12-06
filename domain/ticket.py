@@ -25,10 +25,10 @@ class SingleTicket(Ticket):
         return "Ticket ID: {}\n{}\n".format(self.id, self.match) + "Seat: " + str(self.seat)
 
     @staticmethod
-    def construct(ticket_id):
+    def construct(ticket_id, id):
         if not TicketDB.does_exist(ticket_id):
             raise TicketDoesNotExistError()
-        row = TicketDB.get_by_id(ticket_id)
+        row = TicketDB.get_by_id(ticket_id, id)
         if row[1] is None:
             fan_id_card = None
         else:
