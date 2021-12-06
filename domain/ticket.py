@@ -38,9 +38,3 @@ class SingleTicket(Ticket):
         match = Match.construct(match_id)
         seat = Seat(row[4], row[5], row[6])
         return SingleTicket(row[0], fan_id_card, row[2], match, seat)
-
-
-class SeasonTicket(Ticket):
-    def __init__(self, ticket_id, fan_id_card, price, tickets):
-        super().__init__(ticket_id, fan_id_card, price)
-        self.tickets = tickets
