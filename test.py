@@ -14,12 +14,10 @@ from domain.fan_id_card import FanIDCard
 import hashlib
 import pymongo
 
-# organizer = Organizer.construct("orgkom")
-# match = Match(None, "Dor", "lla", "2021-03-10", organizer.username, "quarterfinal")
-# organizer.add_match(match)
-# # seats = Seat.get_seats()
-# # cutomer = Customer.construct("mario")
-# # ticket = SingleTicket(1, "NULL", 28.99, match, seats[0])
-# # cutomer.buy_ticket(ticket)
+string_l = "2022-10-08"
 
-print(numpy.arange(1, 2 + 1)[0])
+real_date = "2023-10-07"
+
+
+res = Mongo.client.get_collection('matches').count_documents({"match_date" : {"$gt" : string_l}})
+print(res)

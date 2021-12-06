@@ -37,6 +37,8 @@ class TicketDB(Mongo):
         tickets = Mongo.client.get_collection('ticket')
         find_tickets = tickets.find({"card_id" : card_id}, {"_id" : 0, "ticket_id" : 1, "match_id" : 1}).sort('ticket_id', pymongo.ASCENDING)
         cnt = tickets.count_documents({"card_id" : card_id})
+        if cnt == 0:
+            return 0
         delim = len(find_tickets[0].values())
         Ans_list = [list(find_tickets[i].items()) for i in range(cnt)]
         result = [Ans_list[i][j][1] for i in range(len(Ans_list)) for j in range(len(Ans_list[i]))]

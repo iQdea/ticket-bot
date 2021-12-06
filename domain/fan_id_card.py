@@ -13,6 +13,12 @@ class TicketAlreadyReserved(Exception):
 class TicketAlreadyReturned(Exception):
     pass
 
+class TicketAlreadyBlocked(Exception):
+    pass
+
+class TicketAlreadyUnblocked(Exception):
+    pass
+
 class FanIDCard:
 
     EXPIRATION_PERIOD_IN_YEARS = 1
@@ -58,12 +64,19 @@ class FanIDCard:
         self.balance += value
 
     def block(self):
-        self.is_blocked = True
-        FanIDCardDB.save(self)
+        if self.is_blocked == False:
+            self.is_blocked = True
+            FanIDCardDB.save(self)
+        else:
+            raise TicketAlreadyBlocked("FanId card already blocked")
+
 
     def unblock(self):
-        self.is_blocked = False
-        FanIDCardDB.save(self)
+        if self.is_blocked == True:
+            self.is_blocked = False
+            FanIDCardDB.save(self)
+        else:
+            raise TicketAlreadyUnblocked("FanId card already unblocked")
 
     def __str__(self):
         return "ID: {}\nBalance: ${}\nExpiration date: {}\nState: {}".format(

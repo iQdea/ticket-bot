@@ -7,7 +7,8 @@ from domain.seat import Seat
 from domain.ticket import SingleTicket
 import random
 
-
+class NobodyBuyTickets(Exception):
+    pass
 class Organizer(Person):
 
     def __init__(self, username, first_name, last_name, age, password):
@@ -38,12 +39,13 @@ class Organizer(Person):
     @staticmethod
     def cancel_match(match_id):
         paid_money = TicketDB.get_paid_money(match_id)
+        cnt = 0
         for card_id, price in paid_money:
-            if card_id is not None:
+            if not card_id == "NULL":
                 FanIDCardDB.increase_balance(card_id, price)
+                cnt += 1
         TicketDB.delete_tickets_by_match_id(match_id)
         MatchDB.delete_match(match_id)
-
     @staticmethod
     def construct(username):
         row = PersonDB.get_by_id(username)

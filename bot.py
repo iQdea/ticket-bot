@@ -3,9 +3,10 @@ import datetime
 from db.matchesDB import MatchDB
 from db.personDB import PersonDB
 from db.ticketDB import TicketDB
+from db.matchesDB import MatchExpired
 from domain.terminal import Terminal, UserAlreadyExistsError, IncorrectInputFormat
 from domain.customer import Customer, TicketDoesNotBelongToCustomerError, CustomerDoesNotExistError
-from domain.fan_id_card import FanIDCard, NotEnoughMoneyError
+from domain.fan_id_card import FanIDCard, NotEnoughMoneyError, TicketAlreadyBlocked, TicketAlreadyUnblocked
 from domain.match import Match, MatchDoesNotExistError
 from domain.organizer import Organizer
 from domain.seat import Seat
@@ -107,10 +108,13 @@ def show_matches(message):
 
 def get_matches():
     result = MatchDB.get_matches()
-    matches = ""
-    for row in result:
-        matches += str(Match(*row)) + "\n\n"
-    return matches
+    if not result == 0:
+        matches = ""
+        for row in result:
+            matches += str(Match(*row)) + "\n\n"
+        return matches
+    else:
+        return 0
 
 
 @bot.message_handler(regexp="My credentials")
@@ -171,22 +175,25 @@ def enter_password(message):
 @bot.message_handler(regexp="Show tickets")
 def show_tickets(message):
     if user.role == "customer":
-        try:
-            tickets = get_tickets()
+        tickets = get_tickets()
+        if not tickets == 0:
             send(message,tickets) 
-        except:
+        else:
             send(message,"You do not have any tickets")
 
 
 def get_tickets():
     card_id = user.person.fan_id_card
     result = TicketDB.get_tickets_id_by_card_id(card_id.card_id)
-    tickets = ""
-    for row in result:
-        ticket_id = row[0]
-        match_id = row[1]
-        tickets += str(SingleTicket.construct(ticket_id, match_id)) + "\n\n"
-    return tickets
+    if not result == 0:
+        tickets = ""
+        for row in result:
+            ticket_id = row[0]
+            match_id = row[1]
+            tickets += str(SingleTicket.construct(ticket_id, match_id)) + "\n\n"
+        return tickets
+    else:
+        return 0
 
 
 @bot.message_handler(regexp="Add balance")
@@ -216,7 +223,7 @@ def buy_ticket(message):
             send(message, "Your Fan ID Card is blocked")
         else:
             matches = get_matches()
-            if matches == "":
+            if matches == 0:
                 send(message, "There are no available matches")
             else:
                 tickets_exist = MatchDB.get_tickets_cnt()
@@ -236,6 +243,8 @@ def enter_match_id_to_buy_ticket(message):
         if not MatchDB.does_exist(match_id):
             send(message, "The entered match id does not exist. Please enter the match id again", enter_match_id_to_buy_ticket)
             return
+        if MatchDB.did_expired(match_id):
+            raise MatchExpired()
         try:
             available_seats = get_available_seats(match_id)
             send(message, "Choose an available seat for this match. Your balance: ${}".format(round(user.person.fan_id_card.balance, 2)))
@@ -245,6 +254,8 @@ def enter_match_id_to_buy_ticket(message):
             return
     except ValueError:
         send(message, "Match ID must be an integer. Please enter the match id again", enter_match_id_to_buy_ticket)
+    except MatchExpired:
+        send(message, "The entered match is expired. You can't buy ticket for it")
 def choose_seat(message):
     try:
         ticket_id = int(message.text)
@@ -278,7 +289,7 @@ def return_ticket(message):
             send(message, "Your Fan ID Card is blocked")
         else:
             tickets = get_tickets()
-            if tickets == "":
+            if tickets == 0:
                 send(message, "You do not have any tickets")
             else:
                 send(message, "Enter ticket ID you would like to return")
@@ -296,10 +307,12 @@ def enter_ticket_id_to_return(message):
                 cnt += 1
         for row in result:
             if cnt > 1:
-                send(message, "There are losts of matches with same ID")
+                send(message, "There are lots of matches with same ID")
                 return
             ticket_id = row[0]
             match_id = row[1]
+            if MatchDB.did_expired(match_id):
+                raise MatchExpired()
             ticket = TicketDB.get_by_id(ticket_id, match_id)
             user.person.return_ticket(ticket)
             send(message, "Ticket {} was successfully returned. Balance: ${}".format(ticket_id, round(user.person.fan_id_card.balance, 2)))
@@ -310,6 +323,8 @@ def enter_ticket_id_to_return(message):
         send(message, "The entered ticket ID does not exist. Please enter the ticket ID again", enter_ticket_id_to_return)
     except TicketDoesNotBelongToCustomerError:
         send(message, "Entered ticket ID does not belong to you. Please enter another ticket ID", enter_ticket_id_to_return)
+    except MatchExpired:
+        send(message, "The entered match is expired. You can't return your money for it")
 
 @bot.message_handler(regexp="Register new customer")
 def register_new_customer(message):
@@ -373,9 +388,11 @@ def enter_username_to_unblock(message):
     try:
         customer = Customer.construct(username)
         user.person.unblock_fan_id_card(customer)
-        send(message, "The Fan ID Card {} was successfully unblocked".format(customer.fan_id_card.id))
+        send(message, "The Fan ID Card {} was successfully unblocked".format(customer.fan_id_card.card_id))
     except CustomerDoesNotExistError:
-        send(message, "Customer with username \"{}\" does not exist. Please enter the username again".format(username), enter_username_to_unblock)
+        send(message, "Customer with username \"{}\" does not exist. ".format(username))
+    except TicketAlreadyUnblocked:
+        send(message, "The Fan ID Card {} has already unblocked".format(customer.fan_id_card.card_id))
 
 
 @bot.message_handler(regexp="Block Fan ID Card")
@@ -389,9 +406,12 @@ def enter_username_to_block(message):
     try:
         customer = Customer.construct(username)
         user.person.block_fan_id_card(customer)
-        send(message, "The Fan ID Card {} was successfully blocked".format(customer.fan_id_card.id))
+        send(message, "The Fan ID Card {} was successfully blocked".format(customer.fan_id_card.card_id))
     except CustomerDoesNotExistError:
-        send(message, "Customer with username \"{}\" does not exist. Please enter the username again".format(username), enter_username_to_block)
+        send(message, "Customer with username \"{}\" does not exist.".format(username))
+    except TicketAlreadyBlocked:
+        send(message, "The Fan ID Card {} has already blocked".format(customer.fan_id_card.card_id))
+
 
 @bot.message_handler(regexp="Add match")
 def add_match(message):
@@ -422,7 +442,7 @@ def is_valid_date(datestring):
 def enter_match_date(message):
     new_match.date = message.text
     if not is_valid_date(new_match.date):
-        send(message, "The entered date is not in the format YYYY-MM-DD. Please enter the match date again in the correct format", enter_match_date)
+        send(message, "The entered date is not in the format YYYY-MM-DD.", show)
         return
     user_markup = telebot.types.ReplyKeyboardMarkup(True, False)
     user_markup.row("Group")
@@ -437,13 +457,130 @@ def enter_match_date(message):
 def enter_match_type(message):
     match_type = message.text
     if not (match_type == "Group" or match_type == "Quarterfinal" or match_type == "Semifinal" or match_type == "Final"):
-        send(message, "\"{}\" does not exist as a match type. Please enter the match type again".format(match_type), enter_match_type)
+        send(message, "\"{}\" does not exist as a match type.".format(match_type), show)
         return
     new_match.match_type = match_type
     match = Match(None, new_match.host_team, new_match.guest_team, new_match.date, user.person.username, new_match.match_type)
     user.person.add_match(match)
     send(message, "The match {} between {} and {} was successfully added".format(match.id, match.host_team, match.guest_team) + "press <<Continue>>", show)
 
+@bot.message_handler(regexp='Update match')
+def update_match(message):
+    if user.role == "organizer":
+        send(message, "Enter match ID you would like to update", enter_match_id_to_update)
+
+
+def enter_match_id_to_update(message):
+    try:
+        match_id = int(message.text)
+        global match
+        match = Match.construct(match_id)
+        user_markup = telebot.types.ReplyKeyboardMarkup(True, False)
+        user_markup.row("Host team", "Guest team")
+        user_markup.row("Match date", "Match type")
+        user_markup.row("Cancel")
+        sent = bot.send_message(message.chat.id, "Choose field you would like to update", reply_markup=user_markup)
+        bot.register_next_step_handler(sent, enter_field_to_udpate)
+    except ValueError:
+        send(message, "Match ID must be an integer.",show)
+        return
+    except MatchDoesNotExistError:
+        send(message, "The entered match ID does not exist.", show)
+        return
+
+
+def enter_field_to_udpate(message):
+    field = message.text
+    if field == "Host team":
+        send(message, "Enter new name of host team", enter_new_host_team)
+    elif field == "Guest team":
+        send(message, "Enter new name of guest team", enter_new_guest_team)
+    elif field == "Match date":
+        send(message, "Enter new match date in format YYYY-MM-DD", enter_new_match_date)
+    elif field == "Match type":
+        user_markup = telebot.types.ReplyKeyboardMarkup(True, False)
+        user_markup.row("Group")
+        user_markup.row("Quarterfinal")
+        user_markup.row("Semifinal")
+        user_markup.row("Final")
+        user_markup.row("Cancel")
+        sent = bot.send_message(message.chat.id, "Choose match type", reply_markup=user_markup)
+        bot.register_next_step_handler(sent, enter_new_match_type)
+    else:
+        send(message, "The chosen field does not exist.")
+        return
+
+
+def enter_new_host_team(message):
+    match.host_team = message.text
+    user.person.update_match(match)
+    send(message, "Host team name was successfully updated", show)
+
+
+def enter_new_guest_team(message):
+    match.guest_team = message.text
+    user.person.update_match(match)
+    send(message, "Guest team name was successfully updated", show)
+
+
+def enter_new_match_date(message):
+    match.date = message.text
+    if not is_valid_date(match.date):
+        send(message, "The entered date is not in the format YYYY-MM-DD.", show)
+        return
+    user.person.update_match(match)
+    send(message, "Match date was successfully updated", show)
+
+
+def enter_new_match_type(message):
+    match.match_type = message.text
+    if not (match.match_type == "Group" or match.match_type == "Quarterfinal" or match.match_type == "Semifinal" or match.match_type == "Final"):
+        send(message, "\"{}\" does not exist as a match type.",show)
+        return
+    user.person.update_match(match)
+    send(message, "Match type name was successfully updated", show)
+
+
+@bot.message_handler(regexp='Delete match')
+def delete_match(message):
+    if user.role == "organizer":
+        send(message, "Enter match ID you would like to delete", enter_match_id_to_delete)
+
+
+def enter_match_id_to_delete(message):
+    try:
+        match_id = int(message.text)
+        if not MatchDB.does_exist(match_id):
+            raise MatchDoesNotExistError()
+        user.person.delete_match(match_id)
+        send(message, "The match {} was successfully deleted".format(match_id))
+    except ValueError:
+        send(message, "Match ID must be an integer. Please enter the match ID again", enter_match_id_to_delete)
+    except MatchDoesNotExistError:
+        send(message, "The entered match ID does not exist.", show)
+
+
+@bot.message_handler(regexp='Cancel match')
+def cancel_match(message):
+    if user.role == "organizer":
+        send(message, "Enter match ID you would like to cancel", enter_match_id_to_cancel)
+
+
+def enter_match_id_to_cancel(message):
+    try:
+        match_id = int(message.text)
+        if not MatchDB.does_exist(match_id):
+            raise MatchDoesNotExistError()
+        if MatchDB.did_expired(match_id):
+            raise MatchExpired()
+        user.person.cancel_match(match_id)
+        send(message, "The match {} was successfully cancelled".format(match_id))
+    except ValueError:
+        send(message, "Match ID must be an integer.")
+    except MatchDoesNotExistError:
+        send(message, "The entered match ID does not exist.")
+    except MatchExpired:
+        send(message, "The entered match is expired. Go <<Delete match>> to get success", show)
 
 
 bot.polling()
