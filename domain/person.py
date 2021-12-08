@@ -13,9 +13,14 @@ class Person:
         self.password = password
 
     def __str__(self):
-        return "Username: {}\nFirst name: {}\nLast name: {}\nAge: {}\nRole: {}".format(
-            self.username, self.first_name, self.last_name, self.age, self.role
-        )
+        if not self.age == None:
+            return "Username: {}\nFirst name: {}\nLast name: {}\nAge: {}\nRole: {}".format(
+                self.username, self.first_name, self.last_name, self.age, self.role
+            )
+        else:
+            return "Username: {}\nFirst name: {}\nLast name: {}\nRole: {}".format(
+                self.username, self.first_name, self.last_name, self.role
+            )
 
     @staticmethod
     def generate_password():

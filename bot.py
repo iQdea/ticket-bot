@@ -56,8 +56,10 @@ def show(message):
             user_markup.row("Show matches")
             user_markup.row("Buy ticket", "Return ticket")
         elif user.role == "terminal":
+            user_markup.row("Register new customer")
             user_markup.row("Block Fan ID Card", "Unblock Fan ID Card")
         elif user.role == "organizer":
+            user_markup.row("Show matches")
             user_markup.row("Add match", "Update match")
             user_markup.row("Delete match", "Cancel match")
         user_markup.row("My credentials")
@@ -71,7 +73,7 @@ def show_info(message):
     if not user.authenticated:
         bot.send_message(message.chat.id, "Hello, friend! I am Football-Seller-bot.\n\n" 
         + "Press <<Login>> if you have account or <<Register new customer>> if you haven't yet.\n\n"
-        + "Also you can press <<Show matches>> to see available matches."
+        + "Also you can press <<Show matches>> to see available matches.\n\n"
         + "<<Continue>> is botton to get to user menu page after you succesfully log in")
     else:
         if user.role == "customer":
@@ -335,8 +337,12 @@ def register_new_customer(message):
 
 
 def enter_new_username(message):
-    new_customer.username = message.text
-    send(message, "Enter age", enter_age)
+    if user.role == "terminal":
+        new_customer.username = message.text
+        send(message, "Enter first name", enter_first_name)
+    elif not user.authenticated:
+        new_customer.username = message.text
+        send(message, "Enter age", enter_age)
 
 
 def enter_age(message):
@@ -361,11 +367,14 @@ def enter_last_name(message):
 
 def enter_password_of_customer(message):
     new_customer.password = message.text
-    customer = Customer(new_customer.username, new_customer.first_name, new_customer.last_name, new_customer.age, "customer", new_customer.password, "NULL", None)
+    role = "customer"
+    if user.role == "terminal":
+        role = ""
+        role += "organizer"
+    customer = Customer(new_customer.username, new_customer.first_name, new_customer.last_name, None, role, new_customer.password, "NULL", None)
     try:
-        if not user.person == None:
+        if customer.role == "organizer":
             PersonDB.register(customer, creator="terminal")
-            FanIDCard.create(customer.username)
         else:
             PersonDB.register(customer, creator="terminal")
             FanIDCard.create(customer.username)

@@ -14,7 +14,7 @@ class CustomerDoesNotExistError(Exception):
 class Customer(Person):
 
     def __init__(self, username, first_name, last_name, age, role, password, creator, fan_id_card):
-        super().__init__(username, first_name, last_name, age, password, "customer")
+        super().__init__(username, first_name, last_name, age, password, role)
         self.fan_id_card = fan_id_card
 
     def buy_ticket(self, ticket):
