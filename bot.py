@@ -1,3 +1,4 @@
+from numpy import sign
 import telebot
 import datetime
 from db.matchesDB import MatchDB
@@ -10,6 +11,7 @@ from domain.fan_id_card import FanIDCard, NotEnoughMoneyError, TicketAlreadyBloc
 from domain.match import Match, MatchDoesNotExistError
 from domain.organizer import Organizer
 from domain.seat import Seat
+from domain.person import Person
 from domain.ticket import SingleTicket, Ticket, TicketDoesNotExistError
 
 token = "2130797376:AAENz9nRcdRj0GiHnnzFOOQvY8XSpvTEzfs"
@@ -56,6 +58,7 @@ def show(message):
             user_markup.row("Show matches")
             user_markup.row("Buy ticket", "Return ticket")
         elif user.role == "terminal":
+            user_markup.row("Show Users")
             user_markup.row("Register new customer")
             user_markup.row("Block Fan ID Card", "Unblock Fan ID Card")
         elif user.role == "organizer":
@@ -115,6 +118,25 @@ def get_matches():
         for row in result:
             matches += str(Match(*row)) + "\n\n"
         return matches
+    else:
+        return 0
+
+@bot.message_handler(regexp="Show Users")
+def show_users(message):
+    if user.role == "terminal":
+        users = get_users()
+        send(message, users if users != 0 else "There are no users")
+
+
+def get_users():
+    result = PersonDB.get_users_info()
+    if not result == 0:
+        users = ""
+        for row in result:
+            users += "Username: {}\nRole: {}\n\n".format(
+                row[0], row[-1]
+            )
+        return users
     else:
         return 0
 

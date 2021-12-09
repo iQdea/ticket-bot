@@ -1,4 +1,5 @@
 from db.mongo import Mongo
+from db.ticketDB import TicketDB as lm
 import hashlib
 
 class UserExistsError(Exception):
@@ -43,6 +44,18 @@ class PersonDB(Mongo):
     def does_exist(username):
         result = Mongo.client.get_collection('person').count_documents({"username" : username})
         return result > 0
+
+    def get_users_info():
+        persons = Mongo.client.get_collection('person')
+        find_persons = persons.find({}, {"_id" : 0, "username" : 1, "role" : 1})
+        cnt = persons.count_documents({})
+        if cnt == 0:
+            return 0
+        delim = len(find_persons[0].values())
+        Ans_list = [list(find_persons[i].items()) for i in range(cnt)]
+        result = [Ans_list[i][j][1] for i in range(len(Ans_list)) for j in range(len(Ans_list[i]))]
+        res = lm.list_split(result, delim)
+        return list(res)
 
     @staticmethod
     def get_role_by_username(username):

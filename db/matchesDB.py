@@ -66,7 +66,6 @@ class MatchDB(Mongo):
     @staticmethod
     def did_expired(match_id):
         string_l = MatchDB.now_time()
-        print(string_l)
         result = Mongo.client.get_collection('matches').count_documents({"match_id" : match_id, "match_date" : {"$lt" : string_l }})
         return result > 0
     @staticmethod

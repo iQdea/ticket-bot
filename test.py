@@ -14,19 +14,11 @@ from domain.ticket import SingleTicket, Ticket
 from domain.fan_id_card import FanIDCard
 import hashlib
 import pymongo
-
-customer = Customer.construct("mario")
-organizer = Organizer.construct("orgkom")
-terminal = Terminal.construct("terminal")
-
-# match = Match(None, "Dortmund", "Sevilla", "2021-03-10", organizer.username, "quarterfinal")
-# organizer.add_match(match)
-
-# new_customer = Customer("alexis", "alexis", "sanchez", 29, None, "Naref", "terminal", None)
-# terminal.register(new_customer)
-
-def encrypt_password(password):
-    return hashlib.md5(password.encode()).hexdigest()
-
-
-print(encrypt_password("Naref"))
+import numpy as np
+persons = Mongo.client.get_collection('person')
+find_persons = persons.find({}, {"_id" : 0})
+cnt = persons.count_documents({})
+delim = len(find_persons[0].values())
+Ans_list = [list(find_persons[i].items()) for i in range(cnt)]
+result = [Ans_list[i][j][1] for i in range(len(Ans_list)) for j in range(len(Ans_list[i]))]
+res = list(TicketDB.list_split(result, delim))
