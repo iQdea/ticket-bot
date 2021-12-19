@@ -1,5 +1,3 @@
-from hashlib import new
-from pymongo import message
 import telebot
 import datetime
 from entity.mongo import Mongo
@@ -69,6 +67,7 @@ def show(message):
         user_markup.row("My credentials")
         user_markup.row("Logout")
         user_markup.row("Confirm logout")
+        user_markup.row("Cancel logout")
     bot.send_message(message.chat.id, "Choose command", reply_markup=user_markup)
 
 @bot.message_handler(regexp="Show info")
@@ -113,8 +112,13 @@ def show_info(message):
 @bot.message_handler(regexp="Reset System")
 def full_reset(message):
     if user.role == "terminal":
+        send(message, "Enter password to confirm reset", enter_password_to_confirm)
+def enter_password_to_confirm(message):
+    passwd = message.text
+    if passwd == user.password:
         Mongo.reset()
-    send(message, "Database succesfully reseted")
+        send(message, "Database was reseted")
+
 
 @bot.message_handler(regexp="Show matches")
 def show_matches(message):
@@ -162,12 +166,15 @@ def show_credentials(message):
 
 @bot.message_handler(regexp="Logout")
 def logout(message):
-    user.authenticated = False
-    user.role = ""
-    send(message, "You sure to be logged out? If yes, press <<Confirm logout>>", answer)
+    send(message, "You sure to be logged out? If yes, press <<Confirm logout>>, else press <<Cancel logout>>", answer)
 
 def answer(message):
-    send(message, "You have been logged out, press any button to continue", show)
+    if message.text == "Confirm logout":
+        user.authenticated = False
+        user.role = ""
+        send(message, "You have been logged out, press any button to continue", show)
+    elif message.text == "Cancel logout":
+        send(message, "Logout stopped")
 
 @bot.message_handler(regexp="Login")
 def login(message):
@@ -373,12 +380,15 @@ def register_new_customer(message):
 
 
 def enter_new_username(message):
-    if user.role == "terminal":
-        new_customer.username = message.text
-        send(message, "Enter password", enter_password_of_customer)
-    elif not user.authenticated:
-        new_customer.username = message.text
-        send(message, "Enter age", enter_age)
+    if not PersonEntity.name_exists(message.text):
+        if user.role == "terminal":
+            new_customer.username = message.text
+            send(message, "Enter password", enter_password_of_customer)
+        elif not user.authenticated:
+            new_customer.username = message.text
+            send(message, "Enter age", enter_age)
+    else:
+        send(message, "User with name {} exists. Please choose another one.".format(message.text), enter_new_username)
 
 
 def enter_age(message):

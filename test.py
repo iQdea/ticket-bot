@@ -15,4 +15,3 @@ from domain.fan_id_card import FanIDCard
 import hashlib
 import pymongo
 import numpy as np
-print(Mongo.client.get_collection('matches').count_documents({}))

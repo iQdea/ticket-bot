@@ -61,3 +61,7 @@ class PersonEntity(Mongo):
     def get_role_by_username(username):
         result = Mongo.client.get_collection('person').find({"username" : username})
         return result[0]['role']
+    
+    @staticmethod
+    def name_exists(username):
+        return Mongo.client.get_collection('person').count_documents({"username" : username}) != 0
