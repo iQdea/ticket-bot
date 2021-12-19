@@ -380,22 +380,28 @@ def register_new_customer(message):
 
 
 def enter_new_username(message):
-    if not PersonEntity.name_exists(message.text):
-        if user.role == "terminal":
-            new_customer.username = message.text
-            send(message, "Enter password", enter_password_of_customer)
-        elif not user.authenticated:
-            new_customer.username = message.text
-            send(message, "Enter age", enter_age)
+    res = PersonEntity.username_check(message.text)
+    if res[1] == 1:
+        if not PersonEntity.name_exists(message.text):
+            send(message, res[0])
+            if user.role == "terminal":
+                new_customer.username = message.text
+                send(message, "Enter password", enter_password_of_new_user)
+            elif not user.authenticated:
+                new_customer.username = message.text
+                send(message, "Enter age", enter_age)
+        else:
+            send(message, "User with name {} exists. Please choose another one.".format(message.text), enter_new_username)
     else:
-        send(message, "User with name {} exists. Please choose another one.".format(message.text), enter_new_username)
-
+        send(message, res[0], enter_new_username)
 
 def enter_age(message):
     try:
         new_customer.age = int(message.text)
         if new_customer.age < 12:
             send(message, "The minimum age must be at least 12")
+        elif new_customer.age > 110:
+            send(message, "It's not joking club, enter real age or go away", enter_age)
         else:
             send(message, "Enter first name", enter_first_name)
     except ValueError:
@@ -409,10 +415,16 @@ def enter_first_name(message):
 
 def enter_last_name(message):
     new_customer.last_name = message.text
-    send(message, "Enter password", enter_password_of_customer)
+    send(message, "Enter password", enter_password_of_new_user)
 
-def enter_password_of_customer(message):
-    new_customer.password = message.text
+def enter_password_of_new_user(message):
+    res = PersonEntity.password_check(message.text)
+    if res[1] == 1:
+        new_customer.password = message.text
+        send(message, res[0])
+    else:
+        send(message, res[0], enter_password_of_new_user)
+        return
     role = "customer"
     if user.role == "terminal":
         role = ""

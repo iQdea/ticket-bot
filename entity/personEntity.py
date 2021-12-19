@@ -1,3 +1,4 @@
+import re
 from entity.mongo import Mongo
 from entity.ticketEntity import TicketEntity as lm
 import hashlib
@@ -65,3 +66,23 @@ class PersonEntity(Mongo):
     @staticmethod
     def name_exists(username):
         return Mongo.client.get_collection('person').count_documents({"username" : username}) != 0
+    
+    @staticmethod
+    def password_check(password):
+        res = [re.search(r"[a-z]", password), re.search(r"[A-Z]", password), re.search(r"[0-9]", password), re.search(r"\W", password)]
+        if all(res):
+            return ["Password is okay", 1]
+        return [("Password is weak. Add "+
+                "lowercase letters, "*(res[0] is None) +
+                "uppercase letters, "*(res[1] is None) +
+                "digits, "*(res[2] is None) +
+                "special symbols, "*(res[3] is None)+
+                "then try again"), 0]
+    @staticmethod
+    def username_check(username):
+        res = [re.search(r"\W", username) is None, len(username) >= 4]
+        if all(res):
+            return ["Username is okay", 1]
+        return [("Problems with username." +
+            "Username contains unauthorized characters. Allowed characters are letters, numbers and underscore."*(res[0] is False) + 
+            "Length of username must be 4 or longer"*(res[1] is False)), 0]
