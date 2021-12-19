@@ -1,12 +1,12 @@
-from db.mongo import Mongo
-from db.personDB import UsernameNotFoundError
+from entity.mongo import Mongo
+from entity.personEntity import UsernameNotFoundError
 import pymongo
 
 class FanIDCardNotFoundError(Exception):
     pass
 
 
-class FanIDCardDB(Mongo):
+class FanIDCardEntity(Mongo):
 
     @staticmethod
     def get_by_id(card_id):
@@ -37,7 +37,7 @@ class FanIDCardDB(Mongo):
 
     @staticmethod
     def reduce_balance(card_id, value):
-        FanIDCardDB.increase_balance(card_id, -value)
+        FanIDCardEntity.increase_balance(card_id, -value)
 
     @staticmethod
     def does_exist(card_id):
@@ -63,11 +63,11 @@ class FanIDCardDB(Mongo):
 
     @staticmethod
     def save(card):
-        if FanIDCardDB.does_exist(card.card_id):
-            FanIDCardDB.update(card)
+        if FanIDCardEntity.does_exist(card.card_id):
+            FanIDCardEntity.update(card)
         else:
-            FanIDCardDB.insert(card)
+            FanIDCardEntity.insert(card)
 
     @staticmethod
     def get_max_card_id():
-        return Mongo.client.get_collection('fun_id_card').find({}, {"_id" : 0}).sort('card_id', pymongo.DESCENDING)[0]['card_id']
+        return Mongo.client.get_collection('fun_id_card').count_documents({})

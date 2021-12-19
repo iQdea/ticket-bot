@@ -1,8 +1,8 @@
-from db.mongo import Mongo
+from entity.mongo import Mongo
 import pymongo
 class TicketNotFoundError(Exception):
     pass
-class TicketDB(Mongo):
+class TicketEntity(Mongo):
 
     @staticmethod
     def add_ticket(ticket, card_id="NULL"):
@@ -42,7 +42,7 @@ class TicketDB(Mongo):
         delim = len(find_tickets[0].values())
         Ans_list = [list(find_tickets[i].items()) for i in range(cnt)]
         result = [Ans_list[i][j][1] for i in range(len(Ans_list)) for j in range(len(Ans_list[i]))]
-        res = TicketDB.list_split(result, delim)
+        res = TicketEntity.list_split(result, delim)
         return list(res)
 
     @staticmethod
@@ -53,9 +53,14 @@ class TicketDB(Mongo):
         delim = len(find_ticket[0].values())
         Ans_list = [list(find_ticket[i].items()) for i in range(cnt)]
         result = [Ans_list[i][j][1] for i in range(len(Ans_list)) for j in range(len(Ans_list[i]))]
-        res = TicketDB.list_split(result, delim)
+        res = TicketEntity.list_split(result, delim)
         return list(res)
 
+    @staticmethod
+    def get_tickets_cnt_for_match_id(match_id):
+        ticket = Mongo.client.get_collection('ticket')
+        return ticket.count_documents({"match_id" : match_id, "card_id" : {"$ne": "NULL"}})
+        
     @staticmethod
     def reserve_ticket(ticket_id, card_id):
         return Mongo.client.get_collection('ticket').update_one({"ticket_id" : ticket_id, "card_id" : "NULL"}, {'$set':{"card_id" : card_id}})
@@ -80,5 +85,5 @@ class TicketDB(Mongo):
         cnt = ticket.count_documents({"match_id" : match_id})
         Ans_list = [list(find_ticket[i].items()) for i in range(cnt)]
         result = [Ans_list[i][j][1] for i in range(len(Ans_list)) for j in range(len(Ans_list[i]))]
-        res = TicketDB.list_split(result, 2)
+        res = TicketEntity.list_split(result, 2)
         return list(res)

@@ -1,6 +1,6 @@
 import pymongo
-from db.mongo import Mongo
-from db.ticketDB import TicketDB as lm
+from entity.mongo import Mongo
+from entity.ticketEntity import TicketEntity as lm
 import datetime
 
 class MatchNotFoundError(Exception):
@@ -9,18 +9,21 @@ class MatchNotFoundError(Exception):
 class MatchExpired(Exception):
     pass
 
-class MatchDB(Mongo):
+class MatchDelitionRestricted(Exception):
+    pass
+
+class MatchEntity(Mongo):
 
     @staticmethod
     def add_match(match):
         collection_name = Mongo.client.get_collection('matches')
-        collection_name.insert_one({"match_id" : match.id,
+        collection_name.insert_one({"match_id" : MatchEntity.get_max_match_id() + 1,
                                     "host" : match.host_team,
                                     "guest" : match.guest_team,
                                     "match_date" : match.date, 
                                     "organizer" : match.organizer,
                                     "match_type" : match.match_type})
-        return MatchDB.get_max_match_id()
+        return MatchEntity.get_max_match_id()
     @staticmethod
     def update_match(match):
         Mongo.client.get_collection('matches').update_one({"match_id" : match.id}, 
@@ -65,12 +68,12 @@ class MatchDB(Mongo):
 
     @staticmethod
     def did_expired(match_id):
-        string_l = MatchDB.now_time()
+        string_l = MatchEntity.now_time()
         result = Mongo.client.get_collection('matches').count_documents({"match_id" : match_id, "match_date" : {"$lt" : string_l }})
         return result > 0
     @staticmethod
     def get_max_match_id():
-        return Mongo.client.get_collection('matches').find({}, {"_id" : 0}).sort('match_id', pymongo.DESCENDING)[0]['match_id']
+        return Mongo.client.get_collection('matches').count_documents({})
     @staticmethod
     def now_time():
         now = datetime.datetime.now()
@@ -82,7 +85,7 @@ class MatchDB(Mongo):
     def get_tickets_cnt():
         A = []
         cnt = 0
-        res = MatchDB.get_matches()
+        res = MatchEntity.get_matches()
         if not res == 0:
             for i in res:
                 A.append(i[0])

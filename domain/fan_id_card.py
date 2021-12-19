@@ -1,7 +1,7 @@
 import datetime
 
-from db.fan_id_cardDB import FanIDCardDB
-from db.ticketDB import TicketDB
+from entity.fan_id_cardEntity import FanIDCardEntity
+from entity.ticketEntity import TicketEntity
 
 
 class NotEnoughMoneyError(Exception):
@@ -41,18 +41,18 @@ class FanIDCard:
     def reserve_ticket(self, ticket):
         if self.balance < ticket[2]:
             raise NotEnoughMoneyError("Not enough money to pay for the ticket")
-        result = TicketDB.reserve_ticket(ticket[0], self.card_id)
+        result = TicketEntity.reserve_ticket(ticket[0], self.card_id)
         if result.modified_count == 0:
             raise TicketAlreadyReserved("Ticket already reserved by another person")
-        FanIDCardDB.reduce_balance(self.card_id, ticket[2])
+        FanIDCardEntity.reduce_balance(self.card_id, ticket[2])
         self.balance -= ticket[2]
 
     def return_ticket(self, ticket):
-        result = TicketDB.return_ticket(ticket[0])
+        result = TicketEntity.return_ticket(ticket[0])
         if result.modified_count == 0:
             raise TicketAlreadyReturned("Ticket already returned")
         refund_price = FanIDCard.calculate_refund_price(ticket[2])
-        FanIDCardDB.increase_balance(self.card_id, refund_price)
+        FanIDCardEntity.increase_balance(self.card_id, refund_price)
         self.balance += refund_price
 
     @staticmethod
@@ -60,13 +60,13 @@ class FanIDCard:
         return 0.9 * price
 
     def increase_balance(self, value):
-        FanIDCardDB.increase_balance(self.card_id, value)
+        FanIDCardEntity.increase_balance(self.card_id, value)
         self.balance += value
 
     def block(self):
         if self.is_blocked == False:
             self.is_blocked = True
-            FanIDCardDB.save(self)
+            FanIDCardEntity.save(self)
         else:
             raise TicketAlreadyBlocked("FanId card already blocked")
 
@@ -74,7 +74,7 @@ class FanIDCard:
     def unblock(self):
         if self.is_blocked == True:
             self.is_blocked = False
-            FanIDCardDB.save(self)
+            FanIDCardEntity.save(self)
         else:
             raise TicketAlreadyUnblocked("FanId card already unblocked")
 
@@ -84,17 +84,17 @@ class FanIDCard:
 
     @staticmethod
     def construct(card_id):
-        row = FanIDCardDB.get_by_id(card_id)
+        row = FanIDCardEntity.get_by_id(card_id)
         return FanIDCard(*row)
 
     @staticmethod
     def construct_by_username(username):
-        row = FanIDCardDB.get_card_by_username(username)
+        row = FanIDCardEntity.get_card_by_username(username)
         return FanIDCard(*row)
 
     @staticmethod
     def create(username):
-        new_card_id = int(FanIDCardDB.get_max_card_id()) + 1
+        new_card_id = int(FanIDCardEntity.get_max_card_id()) + 1
         card = FanIDCard(new_card_id, username, FanIDCard.get_expiration_date(), 0, False)
-        FanIDCardDB.save(card)
+        FanIDCardEntity.save(card)
         return card

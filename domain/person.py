@@ -1,7 +1,3 @@
-import random
-import abc
-
-
 class Person:
 
     def __init__(self, username, first_name, last_name, age, password, role):
@@ -21,15 +17,3 @@ class Person:
             return "Username: {}\nFirst name: {}\nLast name: {}\nRole: {}".format(
                 self.username, self.first_name, self.last_name, self.role
             )
-
-    @staticmethod
-    def generate_password():
-        length = 8
-        allowed_characters = []
-        for symbol in "abcdefghijklmnopqrstuvwxyz0123456789":
-            allowed_characters.append(symbol)
-        password = []
-        for i in range(length):
-            password.append(allowed_characters[random.randint(0, len(allowed_characters) - 1)])
-        return "".join(password)
-

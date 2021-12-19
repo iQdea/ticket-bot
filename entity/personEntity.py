@@ -1,5 +1,5 @@
-from db.mongo import Mongo
-from db.ticketDB import TicketDB as lm
+from entity.mongo import Mongo
+from entity.ticketEntity import TicketEntity as lm
 import hashlib
 
 class UserExistsError(Exception):
@@ -9,7 +9,7 @@ class UsernameNotFoundError(Exception):
     pass
 
 
-class PersonDB(Mongo):
+class PersonEntity(Mongo):
     @staticmethod
     def register(person, creator="NULL"):
         collection_name = Mongo.client.get_collection('person')
@@ -18,7 +18,7 @@ class PersonDB(Mongo):
                                     "last_name" : person.last_name, 
                                     "age" : person.age,
                                     "role" : person.role,
-                                    "password" :  PersonDB.encrypt_password(person.password),
+                                    "password" :  PersonEntity.encrypt_password(person.password),
                                     "creator" : creator})
     @staticmethod
     def encrypt_password(password):
@@ -26,7 +26,7 @@ class PersonDB(Mongo):
 
     @staticmethod
     def is_password_correct(username, password):
-        encrypted_password = PersonDB.encrypt_password(password)
+        encrypted_password = PersonEntity.encrypt_password(password)
         result = Mongo.client.get_collection('person').count_documents({"username" : username, "password" : encrypted_password})
         return result != 0
 

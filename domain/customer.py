@@ -1,4 +1,4 @@
-from db.personDB import PersonDB
+from entity.personEntity import PersonEntity
 from domain.fan_id_card import FanIDCard
 from domain.person import Person
 
@@ -39,8 +39,8 @@ class Customer(Person):
 
     @staticmethod
     def construct(username):
-        if not PersonDB.does_exist(username) or PersonDB.get_role_by_username(username) != "customer":
+        if not PersonEntity.does_exist(username) or PersonEntity.get_role_by_username(username) != "customer":
             raise CustomerDoesNotExistError()
-        row = PersonDB.get_by_id(username)
+        row = PersonEntity.get_by_id(username)
         card = FanIDCard.construct_by_username(username)
         return Customer(row[0], row[1], row[2], row[3], row[4], row[5], row[6], card)

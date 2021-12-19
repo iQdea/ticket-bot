@@ -1,18 +1,18 @@
-from numpy import sign
+from hashlib import new
+from pymongo import message
 import telebot
 import datetime
-from db.matchesDB import MatchDB
-from db.personDB import PersonDB
-from db.ticketDB import TicketDB
-from db.matchesDB import MatchExpired
+from entity.mongo import Mongo
+from entity.matchesEntity import MatchEntity, MatchExpired, MatchDelitionRestricted
+from entity.personEntity import PersonEntity
+from entity.ticketEntity import TicketEntity
 from domain.terminal import Terminal, UserAlreadyExistsError, IncorrectInputFormat
 from domain.customer import Customer, TicketDoesNotBelongToCustomerError, CustomerDoesNotExistError
 from domain.fan_id_card import FanIDCard, NotEnoughMoneyError, TicketAlreadyBlocked, TicketAlreadyUnblocked
 from domain.match import Match, MatchDoesNotExistError
 from domain.organizer import Organizer
 from domain.seat import Seat
-from domain.person import Person
-from domain.ticket import SingleTicket, Ticket, TicketDoesNotExistError
+from domain.ticket import SingleTicket, TicketDoesNotExistError
 
 token = "2130797376:AAENz9nRcdRj0GiHnnzFOOQvY8XSpvTEzfs"
 bot = telebot.TeleBot(token)
@@ -49,17 +49,18 @@ def show(message):
         user_markup.row("Register new customer")
         user_markup.row("Login")
         user_markup.row("Show matches")
-        user_markup.row("Continue")
     else:
         user_markup.row("Show info")
         if user.role == "customer":
+            user_markup.row("Show balance")
             user_markup.row("Show tickets")
             user_markup.row("Add balance")
             user_markup.row("Show matches")
             user_markup.row("Buy ticket", "Return ticket")
         elif user.role == "terminal":
+            user_markup.row("Reset System")
             user_markup.row("Show Users")
-            user_markup.row("Register new customer")
+            user_markup.row("Register new organizer")
             user_markup.row("Block Fan ID Card", "Unblock Fan ID Card")
         elif user.role == "organizer":
             user_markup.row("Show matches")
@@ -68,51 +69,60 @@ def show(message):
         user_markup.row("My credentials")
         user_markup.row("Logout")
         user_markup.row("Confirm logout")
-        user_markup.row("Continue")
     bot.send_message(message.chat.id, "Choose command", reply_markup=user_markup)
 
 @bot.message_handler(regexp="Show info")
 def show_info(message):
     if not user.authenticated:
         bot.send_message(message.chat.id, "Hello, friend! I am Football-Seller-bot.\n\n" 
+        + "Press <<Show info>> to get this message.\n\n"
         + "Press <<Login>> if you have account or <<Register new customer>> if you haven't yet.\n\n"
         + "Also you can press <<Show matches>> to see available matches.\n\n"
-        + "<<Continue>> is botton to get to user menu page after you succesfully log in")
+        + "Press any botton to get to user menu page after you succesfully logged in.")
     else:
         if user.role == "customer":
-            bot.send_message(message.chat.id, "Press <<Show tickets>> to see your tickets\n\n" 
+            bot.send_message(message.chat.id, "Press <<Show info>> to get this message.\n\n"
+            + "Press <<Show balance>> to see your balance.\n\n"
+            + "Press <<Show tickets>> to see your tickets.\n\n" 
             + "Press <<Add balance>> to send money to your fan_id_card.\n\n"
             + "Press <<Show matches>> to see available matches.\n\n"
             + "Press <<Buy ticket>> to purchase ticket.\n\n"
-            + "Press <<Return tciket>> to return ticket and get your money back. Warning!!! You will get 90 percents of ticket price\n\n"
-            + "Press <<My credentials>> to see your account information\n\n"
-            + "Press <<Logout>> to be logged out\n\n"
-            + "<<Confirm logout>> and <<Continue>> are bottons to get to start page after you press <<Logout>>")
+            + "Press <<Return tciket>> to return ticket and get your money back. Warning!!! You will get 90 percents of ticket price.\n\n"
+            + "Press <<My credentials>> to see your account information.\n\n"
+            + "Press <<Logout>> to be logged out.\n\n"
+            + "Press <<Confirm logout>> and any botton to get to start page after you press <<Logout>>.")
         elif user.role == "terminal":
-            bot.send_message(message.chat.id, "Press <<Block Fan ID Card>> to block someone.\n\n"
+            bot.send_message(message.chat.id, "Press <<Show info>> to get this message.\n\n"
+            + "Press <<Reset System>> if you really want to clear System Database from all documents. At least, there will be terminal user.\n\n"
+            + "Press <<Show Users>> to get all user's usernames and roles.\n\n"
+            + "Press <<Register new organizer>> to add new organizer to system.\n\n"
+            + "Press <<Block Fan ID Card>> to block someone.\n\n"
             + "Press <<Unblock Fan ID Card>> to unblock user who has been blocket yet.\n\n"
-            + "Press <<My credentials>> to see your account information\n\n"
-            + "Press <<Logout>> to be logged out\n\n"
-            + "<<Confirm logout>> and <<Continue>> are bottons to get to start page after you press <<Logout>>")
+            + "Press <<My credentials>> to see your account information.\n\n"
+            + "Press <<Logout>> to be logged out.\n\n"
+            + "Press <<Confirm logout>> and any botton to get to start page after you press <<Logout>>.")
         else:
-            bot.send_message(message.chat.id, "Press <<Add Match>> to create new match in system\n\n" 
-            + "Press <<Update Match>> to update info about match in system\n\n"
-            + "Press <<Delete Match>> to remove match from system after canceling\n\n"
-            + "Press <<Cancel Match>> to cancel match in system\n\n"
-            + "Press <<My credentials>> to see your account information\n\n"
-            + "Press <<Logout>> to be logged out\n\n"
-            + "<<Confirm logout>> and <<Continue>> are bottons to get to start page after you press <<Logout>>")
+            bot.send_message(message.chat.id, "Press <<Add Match>> to create new match in system.\n\n" 
+            + "Press <<Update Match>> to update info about match in system.\n\n"
+            + "Press <<Delete Match>> to remove match from system after canceling.\n\n"
+            + "Press <<Cancel Match>> to cancel match in system.\n\n"
+            + "Press <<My credentials>> to see your account information.\n\n"
+            + "Press <<Logout>> to be logged out.\n\n"
+            + "Press <<Confirm logout>> and any botton to get to start page after you press <<Logout>>.")
 
-
+@bot.message_handler(regexp="Reset System")
+def full_reset(message):
+    if user.role == "terminal":
+        Mongo.reset()
+    send(message, "Database succesfully reseted")
 
 @bot.message_handler(regexp="Show matches")
 def show_matches(message):
     matches = get_matches()
     send(message, matches if matches != 0 else "There are no available matches")
 
-
 def get_matches():
-    result = MatchDB.get_matches()
+    result = MatchEntity.get_matches()
     if not result == 0:
         matches = ""
         for row in result:
@@ -120,6 +130,10 @@ def get_matches():
         return matches
     else:
         return 0
+
+@bot.message_handler(regexp="Show balance")
+def show_money(message):
+    send(message, "Balance: {}$".format(user.person.fan_id_card.balance))
 
 @bot.message_handler(regexp="Show Users")
 def show_users(message):
@@ -129,7 +143,7 @@ def show_users(message):
 
 
 def get_users():
-    result = PersonDB.get_users_info()
+    result = PersonEntity.get_users_info()
     if not result == 0:
         users = ""
         for row in result:
@@ -153,7 +167,7 @@ def logout(message):
     send(message, "You sure to be logged out? If yes, press <<Confirm logout>>", answer)
 
 def answer(message):
-    send(message, "You have been logged out, press <<Continue>>", show)
+    send(message, "You have been logged out, press any button to continue", show)
 
 @bot.message_handler(regexp="Login")
 def login(message):
@@ -162,39 +176,39 @@ def login(message):
 
 def enter_username(message):
     username = message.text
-    if PersonDB.does_exist(username):
+    if PersonEntity.does_exist(username):
         user.username = username
         send(message, "Enter your password", enter_password)
     else:
-        send(message, "The entered username does not exist. Enter the username again", enter_username)
+        send(message, "The entered username does not exist. Check if you have all correct credentials to login")
 
 def enter_password(message):
     password = message.text
-    if PersonDB.is_password_correct(user.username, password):
+    if PersonEntity.is_password_correct(user.username, password):
         user.password = password
         user.authenticated = True
-        user.role = PersonDB.get_role_by_username(user.username)
+        user.role = PersonEntity.get_role_by_username(user.username)
         print(user.username, user.password, user.role)
         if user.role == "customer":
             try:
                 user.person = Customer.construct(user.username)
-                send(message, "You have been successfully logged in, press <<Continue>>", show)
+                send(message, "You have been successfully logged in, press any button to continue", show)
             except:
                 send(message, "User wasn't found. Check if you have your fun_id_card")
         elif user.role == "terminal":
             try:
                 user.person = Terminal.construct(user.username)
-                send(message, "You have been successfully logged in, press <<Continue>>", show)
+                send(message, "You have been successfully logged in, press any button to continue", show)
             except:
                 send(message, "User wasn't found. Check if you have all credentials to login")
         elif user.role == "organizer":
             try:
                 user.person = Organizer.construct(user.username)
-                send(message, "You have been successfully logged in, press <<Continue>>", show)
+                send(message, "You have been successfully logged in, press any button to continue", show)
             except:
                 send(message, "User wasn't found. Check if you have all credentials to login")
     else:
-        send(message, "The entered password is wrong. Enter correct username and password again", enter_username)
+        send(message, "The entered password is wrong. Check if you have all correct credentials to login")
 
 @bot.message_handler(regexp="Show tickets")
 def show_tickets(message):
@@ -208,7 +222,7 @@ def show_tickets(message):
 
 def get_tickets():
     card_id = user.person.fan_id_card
-    result = TicketDB.get_tickets_id_by_card_id(card_id.card_id)
+    result = TicketEntity.get_tickets_id_by_card_id(card_id.card_id)
     if not result == 0:
         tickets = ""
         for row in result:
@@ -250,7 +264,7 @@ def buy_ticket(message):
             if matches == 0:
                 send(message, "There are no available matches")
             else:
-                tickets_exist = MatchDB.get_tickets_cnt()
+                tickets_exist = MatchEntity.get_tickets_cnt()
                 if tickets_exist > 0:
                     send(message, "Enter match ID you would like to attend")
                     send(message, matches, enter_match_id_to_buy_ticket)
@@ -264,10 +278,10 @@ def enter_match_id_to_buy_ticket(message):
     global match_id
     try:
         match_id = int(message.text)
-        if not MatchDB.does_exist(match_id):
+        if not MatchEntity.does_exist(match_id):
             send(message, "The entered match id does not exist. Please enter the match id again", enter_match_id_to_buy_ticket)
             return
-        if MatchDB.did_expired(match_id):
+        if MatchEntity.did_expired(match_id):
             raise MatchExpired()
         try:
             available_seats = get_available_seats(match_id)
@@ -283,10 +297,10 @@ def enter_match_id_to_buy_ticket(message):
 def choose_seat(message):
     try:
         ticket_id = int(message.text)
-        if not TicketDB.does_exist(ticket_id):
+        if not TicketEntity.does_exist(ticket_id):
             send(message, "The entered ID does not exist. Please enter the ID again", choose_seat)
             return
-        ticket = TicketDB.get_by_id(ticket_id, match_id)
+        ticket = TicketEntity.get_by_id(ticket_id, match_id)
         user.person.buy_ticket(ticket)
         send(message, "The seat and ticket were successfully reserved. Balance: ${}".format(round(user.person.fan_id_card.balance, 2)))
     except ValueError:
@@ -298,7 +312,7 @@ def choose_seat(message):
 
 
 def get_available_seats(match_id):
-    result = TicketDB.get_available_tickets_id_and_seats_and_price(match_id)
+    result = TicketEntity.get_available_tickets_id_and_seats_and_price(match_id)
     ans = []
     tickets_id_and_seats_and_prices = ""
     for row in result:
@@ -323,7 +337,7 @@ def return_ticket(message):
 def enter_ticket_id_to_return(message):
     try:
         card_id = user.person.fan_id_card
-        result = TicketDB.get_tickets_id_by_card_id(card_id.card_id)
+        result = TicketEntity.get_tickets_id_by_card_id(card_id.card_id)
         ticket_id = int(message.text)
         cnt = 0
         for row in result:
@@ -335,9 +349,9 @@ def enter_ticket_id_to_return(message):
                 return
             ticket_id = row[0]
             match_id = row[1]
-            if MatchDB.did_expired(match_id):
+            if MatchEntity.did_expired(match_id):
                 raise MatchExpired()
-            ticket = TicketDB.get_by_id(ticket_id, match_id)
+            ticket = TicketEntity.get_by_id(ticket_id, match_id)
             user.person.return_ticket(ticket)
             send(message, "Ticket {} was successfully returned. Balance: ${}".format(ticket_id, round(user.person.fan_id_card.balance, 2)))
             return
@@ -350,7 +364,7 @@ def enter_ticket_id_to_return(message):
     except MatchExpired:
         send(message, "The entered match is expired. You can't return your money for it")
 
-@bot.message_handler(regexp="Register new customer")
+@bot.message_handler(regexp="Register")
 def register_new_customer(message):
     if user.role == "terminal" or not user.authenticated:
         global new_customer
@@ -361,7 +375,7 @@ def register_new_customer(message):
 def enter_new_username(message):
     if user.role == "terminal":
         new_customer.username = message.text
-        send(message, "Enter first name", enter_first_name)
+        send(message, "Enter password", enter_password_of_customer)
     elif not user.authenticated:
         new_customer.username = message.text
         send(message, "Enter age", enter_age)
@@ -396,9 +410,9 @@ def enter_password_of_customer(message):
     customer = Customer(new_customer.username, new_customer.first_name, new_customer.last_name, None, role, new_customer.password, "NULL", None)
     try:
         if customer.role == "organizer":
-            PersonDB.register(customer, creator="terminal")
+            PersonEntity.register(customer, creator="terminal")
         else:
-            PersonDB.register(customer, creator="terminal")
+            PersonEntity.register(customer, creator="terminal")
             FanIDCard.create(customer.username)
         send(message, "The customer was successfully registered".format(customer.username))
         send(message, "Username: {}\nPassword: {}".format(customer.username, customer.password))
@@ -421,7 +435,7 @@ def enter_username_to_unblock(message):
         user.person.unblock_fan_id_card(customer)
         send(message, "The Fan ID Card {} was successfully unblocked".format(customer.fan_id_card.card_id))
     except CustomerDoesNotExistError:
-        send(message, "Customer with username \"{}\" does not exist. ".format(username))
+        send(message, "Customer with username \"{}\" does not exist. Or you have choosen yourself or organizer, which restricted.".format(username))
     except TicketAlreadyUnblocked:
         send(message, "The Fan ID Card {} has already unblocked".format(customer.fan_id_card.card_id))
 
@@ -439,7 +453,7 @@ def enter_username_to_block(message):
         user.person.block_fan_id_card(customer)
         send(message, "The Fan ID Card {} was successfully blocked".format(customer.fan_id_card.card_id))
     except CustomerDoesNotExistError:
-        send(message, "Customer with username \"{}\" does not exist.".format(username))
+        send(message, "Customer with username \"{}\" does not exist. Or you have choosen yourself or organizer, which restricted.".format(username))
     except TicketAlreadyBlocked:
         send(message, "The Fan ID Card {} has already blocked".format(customer.fan_id_card.card_id))
 
@@ -493,7 +507,7 @@ def enter_match_type(message):
     new_match.match_type = match_type
     match = Match(None, new_match.host_team, new_match.guest_team, new_match.date, user.person.username, new_match.match_type)
     user.person.add_match(match)
-    send(message, "The match {} between {} and {} was successfully added".format(match.id, match.host_team, match.guest_team) + "press <<Continue>>", show)
+    send(message, "The match {} between {} and {} was successfully added".format(match.id, match.host_team, match.guest_team) + " press <<Continue>>", show)
 
 @bot.message_handler(regexp='Update match')
 def update_match(message):
@@ -581,14 +595,18 @@ def delete_match(message):
 def enter_match_id_to_delete(message):
     try:
         match_id = int(message.text)
-        if not MatchDB.does_exist(match_id):
+        if not MatchEntity.does_exist(match_id):
             raise MatchDoesNotExistError()
+        if not MatchEntity.did_expired(match_id) and TicketEntity.get_tickets_cnt_for_match_id(match_id) > 0 or not MatchEntity.did_expired(match_id):
+            raise MatchDelitionRestricted()
         user.person.delete_match(match_id)
         send(message, "The match {} was successfully deleted".format(match_id))
     except ValueError:
         send(message, "Match ID must be an integer. Please enter the match ID again", enter_match_id_to_delete)
     except MatchDoesNotExistError:
         send(message, "The entered match ID does not exist.", show)
+    except MatchDelitionRestricted:
+        send(message, "You can't delete match while it hasn't expired or there are users with tickets for this match. ", show)
 
 
 @bot.message_handler(regexp='Cancel match')
@@ -600,9 +618,9 @@ def cancel_match(message):
 def enter_match_id_to_cancel(message):
     try:
         match_id = int(message.text)
-        if not MatchDB.does_exist(match_id):
+        if not MatchEntity.does_exist(match_id):
             raise MatchDoesNotExistError()
-        if MatchDB.did_expired(match_id):
+        if MatchEntity.did_expired(match_id):
             raise MatchExpired()
         user.person.cancel_match(match_id)
         send(message, "The match {} was successfully cancelled".format(match_id))

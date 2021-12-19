@@ -1,4 +1,4 @@
-from db.matchesDB import MatchDB
+from entity.matchesEntity import MatchEntity
 
 
 class MatchDoesNotExistError(Exception):
@@ -7,10 +7,7 @@ class MatchDoesNotExistError(Exception):
 
 class Match:
     def __init__(self, id, host_team, guest_team, date, organizer, match_type):
-        if id == None:
-            self.id = Match.new_id()
-        else:
-            self.id = id
+        self.id = id
         self.host_team = host_team
         self.guest_team = guest_team
         self.date = date
@@ -22,17 +19,17 @@ class Match:
 
     @staticmethod
     def construct(match_id):
-        if not MatchDB.does_exist(match_id):
+        if not MatchEntity.does_exist(match_id):
             raise MatchDoesNotExistError()
-        row = MatchDB.get_by_id(match_id)
+        row = MatchEntity.get_by_id(match_id)
         return Match(row[0], row[1], row[2], row[3], row[4], row[5])
 
     def save(self):
-        MatchDB.update_match(self)
+        MatchEntity.update_match(self)
     
     @staticmethod
     def new_id():
-        res = MatchDB.get_matches()
+        res = MatchEntity.get_matches()
         if not res == 0:
             res = [res[i][0] for i in range(len(res))]
             return max(res) + 1
