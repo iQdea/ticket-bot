@@ -44,8 +44,8 @@ def send(message, text, next_handler=None):
 def show(message):
     user_markup = telebot.types.InlineKeyboardMarkup(True, False)
     if not user.authenticated:
-        user_markup.row("Show info")
-        user_markup.row("Register new customer")
+        user_markup.row(telebot.types.InlineKeyboardButton(text="Show info", callback_data="Show info"), 
+        telebot.types.InlineKeyboardButton(text="Register new customer", callback_data="Register new customer"))
         user_markup.row("Login")
         user_markup.row("Show matches")
     else:
