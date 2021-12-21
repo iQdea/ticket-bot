@@ -355,7 +355,7 @@ def enter_ticket_id_to_return(message):
             if MatchEntity.did_expired(match_id):
                 raise MatchExpired()
             ticket = TicketEntity.get_by_id(ticket_id, match_id)
-            send(message, "Enter your password to confirm operation", confirmation(ticket=ticket, ticket_id=ticket_id))
+            send(message, "Enter your password to confirm operation", confirmation(message, ticket=ticket, ticket_id=ticket_id))
     except ValueError:
         send(message, "Ticket ID must be an integer. Please enter the ticket ID again", enter_ticket_id_to_return)
     except TicketDoesNotExistError:
