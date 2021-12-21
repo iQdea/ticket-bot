@@ -298,6 +298,7 @@ def enter_match_id_to_buy_ticket(message):
         send(message, "Match ID must be an integer. Please enter the match id again", enter_match_id_to_buy_ticket)
     except MatchExpired:
         send(message, "The entered match is expired. You can't buy ticket for it")
+
 def choose_seat(message):
     try:
         ticket_id = int(message.text)
@@ -312,8 +313,6 @@ def choose_seat(message):
     except NotEnoughMoneyError as error:
         send(message, str(error))
         return
-
-
 
 def get_available_seats(match_id):
     result = TicketEntity.get_available_tickets_id_and_seats_and_price(match_id)
@@ -339,6 +338,8 @@ def return_ticket(message):
 
 def enter_ticket_id_to_return(message):
     try:
+        global ticket
+        global ticket_id
         card_id = user.person.fan_id_card
         result = TicketEntity.get_tickets_id_by_card_id(card_id.card_id)
         ticket_id = int(message.text)
@@ -355,16 +356,7 @@ def enter_ticket_id_to_return(message):
             if MatchEntity.did_expired(match_id):
                 raise MatchExpired()
             ticket = TicketEntity.get_by_id(ticket_id, match_id)
-            send(message, "Enter your password to confirm operation")
-            passwd = message.text
-            ans = confirmation(passwd)
-            if ans:
-                user.person.return_ticket(ticket)
-                send(message, "Ticket {} was successfully returned. Balance: ${}".format(ticket_id, round(user.person.fan_id_card.balance, 2)))
-                return
-            else:
-                send(message, "Password is incorrect. Operation canceled")
-                return
+            send(message, "Enter your password to confirm operation", confirmation)
     except ValueError:
         send(message, "Ticket ID must be an integer. Please enter the ticket ID again", enter_ticket_id_to_return)
     except TicketDoesNotExistError:
@@ -374,8 +366,13 @@ def enter_ticket_id_to_return(message):
     except MatchExpired:
         send(message, "The entered match is expired. You can't return your money for it")
 
-def confirmation(passwd):
-    return passwd == user.password 
+def confirmation(message):
+    passwd = message.text
+    if passwd == user.password:
+        send(message, "Operation success")
+        user.person.return_ticket(ticket)
+        send(message, "Ticket {} was successfully returned. Balance: ${}".format(ticket_id, round(user.person.fan_id_card.balance, 2)))
+        return
 
 @bot.message_handler(regexp="Register")
 def register_new_customer(message):
