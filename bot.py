@@ -355,7 +355,16 @@ def enter_ticket_id_to_return(message):
             if MatchEntity.did_expired(match_id):
                 raise MatchExpired()
             ticket = TicketEntity.get_by_id(ticket_id, match_id)
-            send(message, "Enter your password to confirm operation", confirmation(message, ticket=ticket, ticket_id=ticket_id))
+            send(message, "Enter your password to confirm operation")
+            passwd = message.text
+            ans = confirmation(passwd)
+            if ans:
+                user.person.return_ticket(ticket)
+                send(message, "Ticket {} was successfully returned. Balance: ${}".format(ticket_id, round(user.person.fan_id_card.balance, 2)))
+                return
+            else:
+                send(message, "Password is incorrect. Operation canceled")
+                return
     except ValueError:
         send(message, "Ticket ID must be an integer. Please enter the ticket ID again", enter_ticket_id_to_return)
     except TicketDoesNotExistError:
@@ -365,12 +374,8 @@ def enter_ticket_id_to_return(message):
     except MatchExpired:
         send(message, "The entered match is expired. You can't return your money for it")
 
-def confirmation(message, ticket, ticket_id):
-    passwd = message.text
-    if passwd == user.password:
-        user.person.return_ticket(ticket)
-        send(message, "Ticket {} was successfully returned. Balance: ${}".format(ticket_id, round(user.person.fan_id_card.balance, 2)))
-        return
+def confirmation(passwd):
+    return passwd == user.password 
 
 @bot.message_handler(regexp="Register")
 def register_new_customer(message):
