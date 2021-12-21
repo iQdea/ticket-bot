@@ -1,6 +1,5 @@
 from entity.mongo import Mongo
 from entity.personEntity import UsernameNotFoundError
-import pymongo
 
 class FanIDCardNotFoundError(Exception):
     pass

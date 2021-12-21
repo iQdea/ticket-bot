@@ -12,8 +12,9 @@ from domain.organizer import Organizer
 from domain.seat import Seat
 from domain.ticket import SingleTicket, TicketDoesNotExistError
 
-token = "2130797376:AAENz9nRcdRj0GiHnnzFOOQvY8XSpvTEzfs"
-bot = telebot.TeleBot(token)
+BOT_TOKEN = "2130797376:AAENz9nRcdRj0GiHnnzFOOQvY8XSpvTEzfs"
+BOT_URL = 'https://football-seller-bot.herokuapp.com/'
+bot = telebot.TeleBot(BOT_TOKEN)
 
 class CurrentUser:
     def __init__(self):
@@ -654,4 +655,4 @@ def enter_match_id_to_cancel(message):
         send(message, "The entered match is expired. Go <<Delete match>> to get success", show)
 
 
-bot.polling()
+bot.infinity_polling()
