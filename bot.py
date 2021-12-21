@@ -42,7 +42,7 @@ def send(message, text, next_handler=None):
 
 @bot.message_handler(commands=["start"], regexp="start")
 def show(message):
-    user_markup = telebot.types.ReplyKeyboardMarkup(True, False)
+    user_markup = telebot.types.InlineKeyboardMarkup(True, False)
     if not user.authenticated:
         user_markup.row("Show info")
         user_markup.row("Register new customer")
