@@ -403,7 +403,7 @@ def enter_age(message):
         new_customer.age = int(message.text)
         if new_customer.age < 12:
             send(message, "The minimum age must be at least 12")
-        elif new_customer.age > 110:
+        elif new_customer.age >= 100:
             send(message, "It's not joking club, enter real age or go away", enter_age)
         else:
             send(message, "Enter first name", enter_first_name)
@@ -439,11 +439,9 @@ def enter_password_of_new_user(message):
         else:
             PersonEntity.register(customer, creator="terminal")
             FanIDCard.create(customer.username)
-        send(message, "The customer was successfully registered".format(customer.username))
+        send(message, "The customer was successfully registered")
         send(message, "Username: {}\nPassword: {}".format(customer.username, customer.password))
     except IncorrectInputFormat as error:
-        send(message, error)
-    except UserAlreadyExistsError as error:
         send(message, error)
 
 

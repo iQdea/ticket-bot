@@ -26,12 +26,3 @@ class Match:
 
     def save(self):
         MatchEntity.update_match(self)
-    
-    @staticmethod
-    def new_id():
-        res = MatchEntity.get_matches()
-        if not res == 0:
-            res = [res[i][0] for i in range(len(res))]
-            return max(res) + 1
-        else:
-            return 1

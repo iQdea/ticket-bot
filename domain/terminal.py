@@ -28,7 +28,7 @@ class Terminal(Person):
     def register(self, customer):
         if self.is_format_incorrect(customer):
             raise IncorrectInputFormat("The input does not correspond to system format. "
-                                       "The age must be in range from 12 to 99 and other fields must not exceed the length of {} symbols".format(self.MAX_LENGTH))
+                                       "The age must be in range from 12 and other fields must not exceed the length of {} symbols".format(self.MAX_LENGTH))
         if PersonEntity.does_exist(customer.username):
             raise UserAlreadyExistsError("User already exists in the system")
         PersonEntity.register(customer, self.username)

@@ -37,6 +37,9 @@ class Customer(Person):
         result += str(self.fan_id_card)
         return result
 
+    def restore_password(self):
+        return self.password
+        
     @staticmethod
     def construct(username):
         if not PersonEntity.does_exist(username) or PersonEntity.get_role_by_username(username) != "customer":
@@ -44,3 +47,4 @@ class Customer(Person):
         row = PersonEntity.get_by_id(username)
         card = FanIDCard.construct_by_username(username)
         return Customer(row[0], row[1], row[2], row[3], row[4], row[5], row[6], card)
+    
