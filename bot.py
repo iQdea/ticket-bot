@@ -42,7 +42,7 @@ def send(message, text, next_handler=None):
 
 @bot.message_handler(commands=["start"], regexp="start")
 def show(message):
-    user_markup = telebot.types.ReplyKeyboardMarkup(True, True)
+    user_markup = telebot.types.ReplyKeyboardMarkup(True, False)
     if not user.authenticated:
         user_markup.row("Show info")
         user_markup.row("Register new customer")
@@ -51,10 +51,8 @@ def show(message):
     else:
         user_markup.row("Show info")
         if user.role == "customer":
-            user_markup.row("Show balance")
-            user_markup.row("Show tickets")
-            user_markup.row("Add balance")
-            user_markup.row("Show matches")
+            user_markup.row("Show balance", "Add balance")
+            user_markup.row("Show matches", "Show tickets")
             user_markup.row("Buy ticket", "Return ticket")
         elif user.role == "terminal":
             user_markup.row("Reset System")
@@ -65,10 +63,8 @@ def show(message):
             user_markup.row("Show matches")
             user_markup.row("Add match", "Update match")
             user_markup.row("Delete match", "Cancel match")
-        user_markup.row("My credentials")
-        user_markup.row("Logout")
-        user_markup.row("Confirm logout")
-        user_markup.row("Cancel logout")
+        user_markup.row("My credentials", "Logout")
+        user_markup.row("Confirm logout", "Cancel logout")
     bot.send_message(message.chat.id, "Choose command", reply_markup=user_markup)
 
 @bot.message_handler(regexp="Show info")
