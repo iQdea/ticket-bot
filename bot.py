@@ -661,7 +661,7 @@ def enter_data(message):
 
 def check_belong(message):
     check = message.text
-    check = check.split()
+    check = check.split(',')
     ans = Mongo.client.get_collection('person')
     if ans.count_documents({'username' : check[0], 'firstname' : check[1], 'lastname' : check[2], 'age' : check[3]}) == 1:
         passwd = list(ans.find({'username' : check[0], 'firstname' : check[1], 'lastname' : check[2], 'age' : check[3]}))
