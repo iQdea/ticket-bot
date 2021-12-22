@@ -21,6 +21,9 @@ class PersonEntity(Mongo):
                                     "role" : person.role,
                                     "password" :  PersonEntity.encrypt_password(person.password),
                                     "creator" : creator})
+        collection_name = Mongo.client.get_collection('passwords')
+        collection_name.insert_one({"hashpasswd" : PersonEntity.encrypt_password(person.password), 
+                                    "realpasswd" : person.password})
     @staticmethod
     def encrypt_password(password):
         return hashlib.md5(password.encode()).hexdigest()

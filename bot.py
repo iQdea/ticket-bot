@@ -433,7 +433,7 @@ def enter_password_of_new_user(message):
     if user.role == "terminal":
         role = ""
         role += "organizer"
-    customer = Customer(new_customer.username, new_customer.first_name, new_customer.last_name, None, role, new_customer.password, "NULL", None)
+    customer = Customer(new_customer.username, new_customer.first_name, new_customer.last_name, new_customer.age, role, new_customer.password, "NULL", None)
     try:
         if customer.role == "organizer":
             PersonEntity.register(customer, creator="terminal")
@@ -660,14 +660,16 @@ def enter_data(message):
     send(message, "Enter data in format: username, firstname, lastname, age", check_belong)
 
 def check_belong(message):
-    check = message.text
-    check = check.split(',')
+    check = str(message.text)
+    check = check.replace(' ', '').split(',')
+    print(check)
     ans = Mongo.client.get_collection('person')
-    if ans.count_documents({'username' : check[0], 'firstname' : check[1], 'lastname' : check[2], 'age' : check[3]}) == 1:
-        passwd = list(ans.find({'username' : check[0], 'firstname' : check[1], 'lastname' : check[2], 'age' : check[3]}))
-        send(message, "Your password is {}".format(passwd))
+    if ans.count_documents({'username' : check[0], 'first_name' : check[1], 'last_name' : check[2], 'age' : int(check[3])}) == 1:
+        passwd = list(ans.find({'username' : check[0], 'first_name' : check[1], 'last_name' : check[2], 'age' : int(check[3])}))
+        realpasswd = list(Mongo.client.get_collection('passwords').find({"hashpasswd" : passwd[0]['password']}))[0]['realpasswd']
+        send(message, "Your password is {}".format(realpasswd))
         return
     else:
         send(message, "Entered data is wrong, you can't reset your password")
         return
-bot.infinity_polling()
+bot.infinity_polling() 
