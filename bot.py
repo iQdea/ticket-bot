@@ -664,7 +664,7 @@ def check_belong(message):
     check = check.split()
     ans = Mongo.client.get_collection('person')
     if ans.count_documents({'username' : check[0], 'firstname' : check[1], 'lastname' : check[2], 'age' : check[3]}) == 1:
-        passwd = Customer.restore_password()
+        passwd = list(ans.find({'username' : check[0], 'firstname' : check[1], 'lastname' : check[2], 'age' : check[3]}))
         send(message, "Your password is {}".format(passwd))
         return
     else:
