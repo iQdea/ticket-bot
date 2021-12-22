@@ -47,7 +47,7 @@ def show(message):
     if not user.authenticated:
         user_markup.row("Show info")
         user_markup.row("Register new customer")
-        user_markup.row("Login")
+        user_markup.row("Login", "Reset password")
         user_markup.row("Show matches")
     else:
         user_markup.row("Show info")
@@ -658,7 +658,7 @@ def enter_match_id_to_cancel(message):
 @bot.message_handler(regexp='Restore password')
 def enter_data(message):
     send(message, "Enter data in format: username, firstname, lastname, age", check_belong)
-    
+
 def check_belong(message):
     check = message.text
     check = check.split()
