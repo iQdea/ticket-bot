@@ -47,7 +47,7 @@ def show(message):
     if not user.authenticated:
         user_markup.row("Show info")
         user_markup.row("Register new customer")
-        user_markup.row("Login", "Reset password")
+        user_markup.row("Login", "Restore password")
         user_markup.row("Show matches")
     else:
         user_markup.row("Show info")
