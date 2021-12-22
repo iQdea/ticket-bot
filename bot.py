@@ -1,3 +1,4 @@
+from re import M
 import telebot
 import datetime
 from entity.mongo import Mongo
@@ -654,5 +655,19 @@ def enter_match_id_to_cancel(message):
     except MatchExpired:
         send(message, "The entered match is expired. Go <<Delete match>> to get success", show)
 
-
+@bot.message_handler(regexp='Restore password')
+def enter_data(message):
+    send(message, "Enter data in format: username, firstname, lastname, age", check_belong)
+    
+def check_belong(message):
+    check = message.text
+    check = check.split()
+    ans = Mongo.client.get_collection('person')
+    if ans.count_documents({'username' : check[0], 'firstname' : check[1], 'lastname' : check[2], 'age' : check[3]}) == 1:
+        passwd = Customer.restore_password()
+        send(message, "Your password is {}".format(passwd))
+        return
+    else:
+        send(message, "Entered data is wrong, you can't reset your password")
+        return
 bot.infinity_polling()
